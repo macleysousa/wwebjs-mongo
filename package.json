@@ -11,7 +11,8 @@
     "lib": "lib"
   },
   "dependencies": {
-    "mongoose": "^7.0.3"
+    "mongoose": "^7.0.3",
+    "system-x64": "^2.0.3"
   },
   "devDependencies": {
     "ts-node": "^10.9.1",
