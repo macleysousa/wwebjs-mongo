@@ -1,11 +1,6 @@
 import * as fs from 'fs';
 import { Mongoose } from 'mongoose';
 
-interface Options {
-    session: string;
-    path: string;
-    bucket?: any;
-}
 
 type Props = {
     mongoose: Mongoose;
@@ -19,13 +14,13 @@ export class MongoStore {
         this.mongoose = mongoose;
     }
 
-    async sessionExists(options: Options): Promise<boolean> {
+    async sessionExists(options: { session: string }): Promise<boolean> {
         const multiDeviceCollection = this.mongoose.connection.db.collection(`whatsapp-${options.session}.files`);
         const hasExistingSession: number = await multiDeviceCollection.countDocuments();
         return !!hasExistingSession;
     }
 
-    async save(options: Options): Promise<void> {
+    async save(options: { session: string, bucket: any }): Promise<void> {
         const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, {
             bucketName: `whatsapp-${options.session}`
         });
@@ -39,7 +34,7 @@ export class MongoStore {
         await this.deletePrevious(options);
     }
 
-    async extract(options: Options): Promise<void> {
+    async extract(options: { session: string, path: string }): Promise<void> {
         const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, {
             bucketName: `whatsapp-${options.session}`
         });
@@ -64,7 +59,7 @@ export class MongoStore {
         });
     }
 
-    private async deletePrevious(options: Options) {
+    private async deletePrevious(options: { session: string, bucket: any }) {
         const documents = await options.bucket.find({
             filename: `${options.session}.zip`
         }).toArray();
