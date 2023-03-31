@@ -1,6 +1,6 @@
 'use strict';
 
-import { MongoStore } from './src/MongoStore';
+import { MongoStore } from './lib/MongoStore';
 
 export {
     MongoStore
