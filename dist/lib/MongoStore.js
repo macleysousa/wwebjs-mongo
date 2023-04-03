@@ -86,23 +86,25 @@ var MongoStore = /** @class */ (function () {
     MongoStore.prototype.save = function (options) {
         return __awaiter(this, void 0, void 0, function () {
             var bucket;
+            var _this = this;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
-                        return [4 /*yield*/, new Promise(function (resolve, reject) {
-                                fs.createReadStream("".concat(options.session, ".zip"))
-                                    .pipe(bucket.openUploadStream("".concat(options.session, ".zip")))
-                                    .on('error', function (err) { return reject(err); })
-                                    .on('close', function () { return resolve; });
-                            })];
-                    case 1:
-                        _a.sent();
-                        return [4 /*yield*/, this.deletePrevious(options)];
-                    case 2:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
+                bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
+                return [2 /*return*/, new Promise(function (resolve, reject) {
+                        fs.createReadStream("".concat(options.session, ".zip"))
+                            .pipe(bucket.openUploadStream("".concat(options.session, ".zip")))
+                            .on('error', function (err) { return reject(err); })
+                            .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0: return [4 /*yield*/, this.deletePrevious(options)];
+                                    case 1:
+                                        _a.sent();
+                                        resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
+                                        return [2 /*return*/];
+                                }
+                            });
+                        }); });
+                    })];
             });
         });
     };
@@ -155,7 +157,7 @@ var MongoStore = /** @class */ (function () {
                         documents = _a.sent();
                         if (documents.length > 1) {
                             oldSession = documents.reduce(function (a, b) { return a.uploadDate < b.uploadDate ? a : b; });
-                            bucket.delete(oldSession._id);
+                            return [2 /*return*/, bucket.delete(oldSession._id)];
                         }
                         return [2 /*return*/];
                 }

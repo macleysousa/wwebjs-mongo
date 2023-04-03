@@ -21,13 +21,16 @@ export class MongoStore {
 
     async save(options: { session: string }): Promise<void> {
         const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
-        await new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             fs.createReadStream(`${options.session}.zip`)
                 .pipe(bucket.openUploadStream(`${options.session}.zip`))
                 .on('error', err => reject(err))
-                .on('close', () => resolve);
+                .on('close', async () => {
+                    await this.deletePrevious(options);
+                    resolve?.call(undefined);
+                });
         });
-        await this.deletePrevious(options);
+
     }
 
     async extract(options: { session: string, path: string }): Promise<void> {
@@ -56,7 +59,7 @@ export class MongoStore {
         const documents = await bucket.find({ filename: `${options.session}.zip` }).toArray();
         if (documents.length > 1) {
             const oldSession = documents.reduce((a: any, b: any) => a.uploadDate < b.uploadDate ? a : b);
-            bucket.delete(oldSession._id);
+            return bucket.delete(oldSession._id);
         }
     }
 }
