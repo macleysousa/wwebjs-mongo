@@ -1,7 +1,6 @@
 import * as fs from 'fs';
 import { Mongoose } from 'mongoose';
 
-
 type Props = {
     mongoose: Mongoose;
 };
@@ -20,24 +19,19 @@ export class MongoStore {
         return !!hasExistingSession;
     }
 
-    async save(options: { session: string, bucket: any }): Promise<void> {
-        const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, {
-            bucketName: `whatsapp-${options.session}`
-        });
+    async save(options: { session: string }): Promise<void> {
+        const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
         await new Promise((resolve, reject) => {
             fs.createReadStream(`${options.session}.zip`)
                 .pipe(bucket.openUploadStream(`${options.session}.zip`))
                 .on('error', err => reject(err))
                 .on('close', () => resolve);
         });
-        options.bucket = bucket;
         await this.deletePrevious(options);
     }
 
     async extract(options: { session: string, path: string }): Promise<void> {
-        const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, {
-            bucketName: `whatsapp-${options.session}`
-        });
+        const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
         return new Promise((resolve, reject) => {
             bucket.openDownloadStreamByName(`${options.session}.zip`)
                 .pipe(fs.createWriteStream(options.path))
@@ -47,9 +41,7 @@ export class MongoStore {
     }
 
     async delete(options: { session: string }) {
-        const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, {
-            bucketName: `whatsapp-${options.session}`
-        });
+        const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
         const documents = await bucket.find({
             filename: `${options.session}.zip`
         }).toArray();
@@ -59,13 +51,12 @@ export class MongoStore {
         });
     }
 
-    private async deletePrevious(options: { session: string, bucket: any }) {
-        const documents = await options.bucket.find({
-            filename: `${options.session}.zip`
-        }).toArray();
+    private async deletePrevious(options: { session: string }) {
+        const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
+        const documents = await bucket.find({ filename: `${options.session}.zip` }).toArray();
         if (documents.length > 1) {
             const oldSession = documents.reduce((a: any, b: any) => a.uploadDate < b.uploadDate ? a : b);
-            return options.bucket.delete(oldSession._id);
+            bucket.delete(oldSession._id);
         }
     }
 }
