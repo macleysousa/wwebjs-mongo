@@ -10,7 +10,6 @@ export declare class MongoStore {
     }): Promise<boolean>;
     save(options: {
         session: string;
-        bucket: any;
     }): Promise<void>;
     extract(options: {
         session: string;

@@ -89,9 +89,7 @@ var MongoStore = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, {
-                            bucketName: "whatsapp-".concat(options.session)
-                        });
+                        bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                         return [4 /*yield*/, new Promise(function (resolve, reject) {
                                 fs.createReadStream("".concat(options.session, ".zip"))
                                     .pipe(bucket.openUploadStream("".concat(options.session, ".zip")))
@@ -100,7 +98,6 @@ var MongoStore = /** @class */ (function () {
                             })];
                     case 1:
                         _a.sent();
-                        options.bucket = bucket;
                         return [4 /*yield*/, this.deletePrevious(options)];
                     case 2:
                         _a.sent();
@@ -113,9 +110,7 @@ var MongoStore = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             var bucket;
             return __generator(this, function (_a) {
-                bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, {
-                    bucketName: "whatsapp-".concat(options.session)
-                });
+                bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                 return [2 /*return*/, new Promise(function (resolve, reject) {
                         bucket.openDownloadStreamByName("".concat(options.session, ".zip"))
                             .pipe(fs.createWriteStream(options.path))
@@ -132,9 +127,7 @@ var MongoStore = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, {
-                            bucketName: "whatsapp-".concat(options.session)
-                        });
+                        bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                         return [4 /*yield*/, bucket.find({
                                 filename: "".concat(options.session, ".zip")
                             }).toArray()];
@@ -152,17 +145,17 @@ var MongoStore = /** @class */ (function () {
     };
     MongoStore.prototype.deletePrevious = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var documents, oldSession;
+            var bucket, documents, oldSession;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, options.bucket.find({
-                            filename: "".concat(options.session, ".zip")
-                        }).toArray()];
+                    case 0:
+                        bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
+                        return [4 /*yield*/, bucket.find({ filename: "".concat(options.session, ".zip") }).toArray()];
                     case 1:
                         documents = _a.sent();
                         if (documents.length > 1) {
                             oldSession = documents.reduce(function (a, b) { return a.uploadDate < b.uploadDate ? a : b; });
-                            return [2 /*return*/, options.bucket.delete(oldSession._id)];
+                            bucket.delete(oldSession._id);
                         }
                         return [2 /*return*/];
                 }
