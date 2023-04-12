@@ -69,16 +69,17 @@ var MongoStore = /** @class */ (function () {
         this.mongoose = mongoose;
     }
     MongoStore.prototype.sessionExists = function (options) {
+        var _a, _b;
         return __awaiter(this, void 0, void 0, function () {
             var collectionName, collections, collectionExists;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         collectionName = "whatsapp-".concat(options.session, ".files");
-                        return [4 /*yield*/, this.mongoose.connection.db.listCollections().toArray()];
+                        return [4 /*yield*/, ((_b = (_a = this.mongoose.connection.db) === null || _a === void 0 ? void 0 : _a.listCollections()) === null || _b === void 0 ? void 0 : _b.toArray())];
                     case 1:
-                        collections = _a.sent();
-                        collectionExists = collections.some(function (collection) { return collection.name === collectionName; });
+                        collections = _c.sent();
+                        collectionExists = collections === null || collections === void 0 ? void 0 : collections.some(function (collection) { return collection.name === collectionName; });
                         return [2 /*return*/, collectionExists];
                 }
             });
