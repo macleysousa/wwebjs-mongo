@@ -14,9 +14,10 @@ export class MongoStore {
     }
 
     async sessionExists(options: { session: string }): Promise<boolean> {
-        const multiDeviceCollection = this.mongoose.connection.db.collection(`whatsapp-${options.session}.files`);
-        const hasExistingSession: number = await multiDeviceCollection.countDocuments();
-        return !!hasExistingSession;
+        const collectionName = `whatsapp-${options.session}.files`;
+        const collections = await this.mongoose.connection.db.listCollections().toArray();
+        const collectionExists = collections.some(collection => collection.name === collectionName);
+        return collectionExists;
     }
 
     async save(options: { session: string }): Promise<void> {

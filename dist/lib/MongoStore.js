@@ -70,15 +70,16 @@ var MongoStore = /** @class */ (function () {
     }
     MongoStore.prototype.sessionExists = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var multiDeviceCollection, hasExistingSession;
+            var collectionName, collections, collectionExists;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        multiDeviceCollection = this.mongoose.connection.db.collection("whatsapp-".concat(options.session, ".files"));
-                        return [4 /*yield*/, multiDeviceCollection.countDocuments()];
+                        collectionName = "whatsapp-".concat(options.session, ".files");
+                        return [4 /*yield*/, this.mongoose.connection.db.listCollections().toArray()];
                     case 1:
-                        hasExistingSession = _a.sent();
-                        return [2 /*return*/, !!hasExistingSession];
+                        collections = _a.sent();
+                        collectionExists = collections.some(function (collection) { return collection.name === collectionName; });
+                        return [2 /*return*/, collectionExists];
                 }
             });
         });
