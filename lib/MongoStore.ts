@@ -15,8 +15,8 @@ export class MongoStore {
 
     async sessionExists(options: { session: string }): Promise<boolean> {
         const collectionName = `whatsapp-${options.session}.files`;
-        const collections = await this.mongoose.connection.db.listCollections().toArray();
-        const collectionExists = collections.some(collection => collection.name === collectionName);
+        const collections = await this.mongoose.connection.db?.listCollections()?.toArray();
+        const collectionExists = collections?.some(collection => collection.name === collectionName);
         return collectionExists;
     }
 
@@ -31,7 +31,6 @@ export class MongoStore {
                     resolve?.call(undefined);
                 });
         });
-
     }
 
     async extract(options: { session: string, path: string }): Promise<void> {
