@@ -5,6 +5,7 @@ type Props = {
 export declare class MongoStore {
     private mongoose;
     constructor({ mongoose }: Props);
+    isConnectionReady(): Promise<boolean>;
     sessionExists(options: {
         session: string;
     }): Promise<boolean>;
