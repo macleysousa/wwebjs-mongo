@@ -1,5 +1,7 @@
 import * as fs from 'fs';
 import { ConnectionStates, Mongoose } from 'mongoose';
+import AdmZip from 'adm-zip';
+import { ObjectId } from 'bson';
 
 type Props = {
     mongoose: Mongoose;
@@ -56,12 +58,19 @@ export class MongoStore {
 
     async extract(options: { session: string, path: string }): Promise<void> {
         if (await this.isConnectionReady()) {
-            const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
+            const bucket: any = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
             return new Promise((resolve, reject) => {
                 bucket.openDownloadStreamByName(`${options.session}.zip`)
                     .pipe(fs.createWriteStream(options.path))
-                    .on('error', err => reject(err))
-                    .on('close', () => resolve());
+                    .on('error', (err: any) => reject(err))
+                    .on('close', async () => {
+                        const zip = new AdmZip(options.path);
+                        if (!zip.test()) {
+                            reject(new Error('The downloaded file is corrupted.'));
+                        } else {
+                            resolve()
+                        }
+                    });
             });
         }
     }
@@ -79,10 +88,38 @@ export class MongoStore {
         }
     }
 
+    private async checkValidZip(session: string, documentId: ObjectId): Promise<boolean> {
+        if (await this.isConnectionReady()) {
+            const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${session}` });
+            return new Promise((resolve) => {
+                const path = `./${documentId}.zip`;
+                bucket.openDownloadStream(documentId).pipe(fs.createWriteStream(path))
+                    .on('error', () => resolve(false))
+                    .on('close', async () => {
+                        const zip = new AdmZip(path);
+                        if (!zip.test()) {
+                            resolve(false)
+                        } else {
+                            resolve(true)
+                        }
+                        fs.rmSync(path);
+                    });
+            })
+        }
+        return false;
+    }
+
     private async deletePrevious(options: { session: string }) {
         if (await this.isConnectionReady()) {
             const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
             const documents = await bucket.find({ filename: `${options.session}.zip` }).toArray();
+
+            const newDocument = documents.reduce((a: any, b: any) => a.uploadDate > b.uploadDate ? a : b);
+            if (!await this.checkValidZip(options.session, newDocument._id)) {
+                console.log('File is corrupted, deleting...');
+                return bucket.delete(newDocument._id);
+            }
+
             if (documents.length > 1) {
                 const oldSession = documents.reduce((a: any, b: any) => a.uploadDate < b.uploadDate ? a : b);
                 return bucket.delete(oldSession._id);

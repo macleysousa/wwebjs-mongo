@@ -58,10 +58,14 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MongoStore = void 0;
 var fs = __importStar(require("fs"));
 var mongoose_1 = require("mongoose");
+var adm_zip_1 = __importDefault(require("adm-zip"));
 var MongoStore = /** @class */ (function () {
     function MongoStore(_a) {
         var mongoose = _a.mongoose;
@@ -152,6 +156,7 @@ var MongoStore = /** @class */ (function () {
     MongoStore.prototype.extract = function (options) {
         return __awaiter(this, void 0, void 0, function () {
             var bucket_2;
+            var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
@@ -162,7 +167,19 @@ var MongoStore = /** @class */ (function () {
                                     bucket_2.openDownloadStreamByName("".concat(options.session, ".zip"))
                                         .pipe(fs.createWriteStream(options.path))
                                         .on('error', function (err) { return reject(err); })
-                                        .on('close', function () { return resolve(); });
+                                        .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
+                                        var zip;
+                                        return __generator(this, function (_a) {
+                                            zip = new adm_zip_1.default(options.path);
+                                            if (!zip.test()) {
+                                                reject(new Error('The downloaded file is corrupted.'));
+                                            }
+                                            else {
+                                                resolve();
+                                            }
+                                            return [2 /*return*/];
+                                        });
+                                    }); });
                                 })];
                         }
                         return [2 /*return*/];
@@ -196,24 +213,66 @@ var MongoStore = /** @class */ (function () {
             });
         });
     };
-    MongoStore.prototype.deletePrevious = function (options) {
+    MongoStore.prototype.checkValidZip = function (session, documentId) {
         return __awaiter(this, void 0, void 0, function () {
-            var bucket, documents, oldSession;
+            var bucket_4;
+            var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
-                        if (!_a.sent()) return [3 /*break*/, 3];
+                        if (_a.sent()) {
+                            bucket_4 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(session) });
+                            return [2 /*return*/, new Promise(function (resolve) {
+                                    var path = "./".concat(documentId, ".zip");
+                                    bucket_4.openDownloadStream(documentId).pipe(fs.createWriteStream(path))
+                                        .on('error', function () { return resolve(false); })
+                                        .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
+                                        var zip;
+                                        return __generator(this, function (_a) {
+                                            zip = new adm_zip_1.default(path);
+                                            if (!zip.test()) {
+                                                resolve(false);
+                                            }
+                                            else {
+                                                resolve(true);
+                                            }
+                                            fs.rmSync(path);
+                                            return [2 /*return*/];
+                                        });
+                                    }); });
+                                })];
+                        }
+                        return [2 /*return*/, false];
+                }
+            });
+        });
+    };
+    MongoStore.prototype.deletePrevious = function (options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var bucket, documents, newDocument, oldSession;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.isConnectionReady()];
+                    case 1:
+                        if (!_a.sent()) return [3 /*break*/, 4];
                         bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                         return [4 /*yield*/, bucket.find({ filename: "".concat(options.session, ".zip") }).toArray()];
                     case 2:
                         documents = _a.sent();
+                        newDocument = documents.reduce(function (a, b) { return a.uploadDate > b.uploadDate ? a : b; });
+                        return [4 /*yield*/, this.checkValidZip(options.session, newDocument._id)];
+                    case 3:
+                        if (!(_a.sent())) {
+                            console.log('File is corrupted, deleting...');
+                            return [2 /*return*/, bucket.delete(newDocument._id)];
+                        }
                         if (documents.length > 1) {
                             oldSession = documents.reduce(function (a, b) { return a.uploadDate < b.uploadDate ? a : b; });
                             return [2 /*return*/, bucket.delete(oldSession._id)];
                         }
-                        _a.label = 3;
-                    case 3: return [2 /*return*/];
+                        _a.label = 4;
+                    case 4: return [2 /*return*/];
                 }
             });
         });
