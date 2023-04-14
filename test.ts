@@ -12,8 +12,8 @@ async function test(id: string) {
     const exist = await store.sessionExists({ session: `RemoteAuth-${id}` })
     console.log(id, exist)
     if (exist) {
-        await store.extract({ session: `RemoteAuth-${id}`, path: `./RemoteAuth-${id}.zip`, });
-        // await store.save({ session: `RemoteAuth-${id}` });
+        // await store.extract({ session: `RemoteAuth-${id}`, path: `./RemoteAuth-${id}.zip`, });
+        //await store.save({ session: `RemoteAuth-${id}` });
         console.log('saved');
     }
 }

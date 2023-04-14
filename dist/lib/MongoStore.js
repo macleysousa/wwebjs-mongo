@@ -274,8 +274,7 @@ var MongoStore = /** @class */ (function () {
                         if (_a.sent()) {
                             bucket_4 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                             return [2 /*return*/, new Promise(function (resolve) {
-                                    var _a;
-                                    var path = (_a = options.path) !== null && _a !== void 0 ? _a : "./".concat(options.documentId, ".zip");
+                                    var path = options.path;
                                     bucket_4.openDownloadStream(options.documentId).pipe(fs.createWriteStream(path))
                                         .on('error', function () { return resolve(false); })
                                         .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
@@ -298,7 +297,7 @@ var MongoStore = /** @class */ (function () {
     };
     MongoStore.prototype.deletePrevious = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var bucket_5, documents, newDocument_1;
+            var bucket_5, documents, newDocument_1, path_1, checaked;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -310,9 +309,15 @@ var MongoStore = /** @class */ (function () {
                     case 2:
                         documents = _a.sent();
                         newDocument_1 = documents.reduce(function (a, b) { return a.uploadDate > b.uploadDate ? a : b; });
-                        return [4 /*yield*/, this.checkValidZip({ session: options.session, documentId: newDocument_1._id })];
+                        path_1 = "./".concat(newDocument_1._id, ".zip");
+                        return [4 /*yield*/, this.checkValidZip({
+                                session: options.session,
+                                documentId: newDocument_1._id,
+                                path: path_1
+                            }).finally(function () { return fs.rmSync(path_1); })];
                     case 3:
-                        if (!(_a.sent())) {
+                        checaked = _a.sent();
+                        if (!checaked) {
                             console.log('File is corrupted, deleting...');
                             return [2 /*return*/, bucket_5.delete(newDocument_1._id)];
                         }
