@@ -48,12 +48,6 @@ export class MongoStore {
                 fs.createReadStream(`${options.session}.zip`)
                     .pipe(bucket.openUploadStream(`${options.session}.zip`))
                     .on('error', err => reject(err))
-                    .on('finish', async (file: any) => {
-                        if (file.length != fs.readFileSync(`${options.session}.zip`).length) {
-                            await bucket.delete(file._id);
-                            reject(new Error('The uploaded file is corrupted.'));
-                        }
-                    })
                     .on('close', async () => {
                         await this.deletePrevious(options);
                         resolve?.call(undefined);

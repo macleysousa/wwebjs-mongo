@@ -142,20 +142,6 @@ var MongoStore = /** @class */ (function () {
                                     fs.createReadStream("".concat(options.session, ".zip"))
                                         .pipe(bucket_1.openUploadStream("".concat(options.session, ".zip")))
                                         .on('error', function (err) { return reject(err); })
-                                        .on('finish', function (file) { return __awaiter(_this, void 0, void 0, function () {
-                                        return __generator(this, function (_a) {
-                                            switch (_a.label) {
-                                                case 0:
-                                                    if (!(file.length != fs.readFileSync("".concat(options.session, ".zip")).length)) return [3 /*break*/, 2];
-                                                    return [4 /*yield*/, bucket_1.delete(file._id)];
-                                                case 1:
-                                                    _a.sent();
-                                                    reject(new Error('The uploaded file is corrupted.'));
-                                                    _a.label = 2;
-                                                case 2: return [2 /*return*/];
-                                            }
-                                        });
-                                    }); })
                                         .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
                                         return __generator(this, function (_a) {
                                             switch (_a.label) {
