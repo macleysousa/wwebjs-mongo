@@ -58,6 +58,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -135,6 +142,20 @@ var MongoStore = /** @class */ (function () {
                                     fs.createReadStream("".concat(options.session, ".zip"))
                                         .pipe(bucket_1.openUploadStream("".concat(options.session, ".zip")))
                                         .on('error', function (err) { return reject(err); })
+                                        .on('finish', function (file) { return __awaiter(_this, void 0, void 0, function () {
+                                        return __generator(this, function (_a) {
+                                            switch (_a.label) {
+                                                case 0:
+                                                    if (!(file.length != fs.readFileSync("".concat(options.session, ".zip")).length)) return [3 /*break*/, 2];
+                                                    return [4 /*yield*/, bucket_1.delete(file._id)];
+                                                case 1:
+                                                    _a.sent();
+                                                    reject(new Error('The uploaded file is corrupted.'));
+                                                    _a.label = 2;
+                                                case 2: return [2 /*return*/];
+                                            }
+                                        });
+                                    }); })
                                         .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
                                         return __generator(this, function (_a) {
                                             switch (_a.label) {
@@ -163,24 +184,67 @@ var MongoStore = /** @class */ (function () {
                     case 1:
                         if (_a.sent()) {
                             bucket_2 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
-                            return [2 /*return*/, new Promise(function (resolve, reject) {
-                                    bucket_2.openDownloadStreamByName("".concat(options.session, ".zip"))
-                                        .pipe(fs.createWriteStream(options.path))
-                                        .on('error', function (err) { return reject(err); })
-                                        .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
-                                        var zip;
-                                        return __generator(this, function (_a) {
-                                            zip = new adm_zip_1.default(options.path);
-                                            if (!zip.test()) {
-                                                reject(new Error('The downloaded file is corrupted.'));
-                                            }
-                                            else {
-                                                resolve();
-                                            }
-                                            return [2 /*return*/];
-                                        });
-                                    }); });
-                                })];
+                            return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
+                                    var documents, _a, documents_1, documents_1_1, doc, e_1_1, zip;
+                                    var _b, e_1, _c, _d;
+                                    return __generator(this, function (_e) {
+                                        switch (_e.label) {
+                                            case 0: return [4 /*yield*/, bucket_2.find({ filename: "".concat(options.session, ".zip") }).toArray()];
+                                            case 1:
+                                                documents = _e.sent();
+                                                _e.label = 2;
+                                            case 2:
+                                                _e.trys.push([2, 10, 11, 16]);
+                                                _a = true, documents_1 = __asyncValues(documents);
+                                                _e.label = 3;
+                                            case 3: return [4 /*yield*/, documents_1.next()];
+                                            case 4:
+                                                if (!(documents_1_1 = _e.sent(), _b = documents_1_1.done, !_b)) return [3 /*break*/, 9];
+                                                _d = documents_1_1.value;
+                                                _a = false;
+                                                _e.label = 5;
+                                            case 5:
+                                                _e.trys.push([5, , 7, 8]);
+                                                doc = _d;
+                                                return [4 /*yield*/, this.checkValidZip({ session: options.session, documentId: doc._id, path: options.path })];
+                                            case 6:
+                                                if (_e.sent()) {
+                                                    return [3 /*break*/, 9];
+                                                }
+                                                return [3 /*break*/, 8];
+                                            case 7:
+                                                _a = true;
+                                                return [7 /*endfinally*/];
+                                            case 8: return [3 /*break*/, 3];
+                                            case 9: return [3 /*break*/, 16];
+                                            case 10:
+                                                e_1_1 = _e.sent();
+                                                e_1 = { error: e_1_1 };
+                                                return [3 /*break*/, 16];
+                                            case 11:
+                                                _e.trys.push([11, , 14, 15]);
+                                                if (!(!_a && !_b && (_c = documents_1.return))) return [3 /*break*/, 13];
+                                                return [4 /*yield*/, _c.call(documents_1)];
+                                            case 12:
+                                                _e.sent();
+                                                _e.label = 13;
+                                            case 13: return [3 /*break*/, 15];
+                                            case 14:
+                                                if (e_1) throw e_1.error;
+                                                return [7 /*endfinally*/];
+                                            case 15: return [7 /*endfinally*/];
+                                            case 16:
+                                                zip = new adm_zip_1.default(options.path);
+                                                if (!zip.test()) {
+                                                    reject(new Error('The downloaded file is corrupted.'));
+                                                }
+                                                else {
+                                                    resolve();
+                                                }
+                                                return [2 /*return*/];
+                                        }
+                                    });
+                                }); })];
                         }
                         return [2 /*return*/];
                 }
@@ -213,7 +277,7 @@ var MongoStore = /** @class */ (function () {
             });
         });
     };
-    MongoStore.prototype.checkValidZip = function (session, documentId) {
+    MongoStore.prototype.checkValidZip = function (options) {
         return __awaiter(this, void 0, void 0, function () {
             var bucket_4;
             var _this = this;
@@ -222,22 +286,22 @@ var MongoStore = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
                         if (_a.sent()) {
-                            bucket_4 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(session) });
+                            bucket_4 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                             return [2 /*return*/, new Promise(function (resolve) {
-                                    var path = "./".concat(documentId, ".zip");
-                                    bucket_4.openDownloadStream(documentId).pipe(fs.createWriteStream(path))
+                                    var _a;
+                                    var path = (_a = options.path) !== null && _a !== void 0 ? _a : "./".concat(options.documentId, ".zip");
+                                    bucket_4.openDownloadStream(options.documentId).pipe(fs.createWriteStream(path))
                                         .on('error', function () { return resolve(false); })
                                         .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
                                         var zip;
                                         return __generator(this, function (_a) {
                                             zip = new adm_zip_1.default(path);
-                                            if (!zip.test()) {
+                                            if (!zip.test())
                                                 resolve(false);
-                                            }
-                                            else {
+                                            else
                                                 resolve(true);
-                                            }
-                                            fs.rmSync(path);
+                                            if (!options.path)
+                                                fs.rmSync(path);
                                             return [2 /*return*/];
                                         });
                                     }); });
@@ -250,26 +314,28 @@ var MongoStore = /** @class */ (function () {
     };
     MongoStore.prototype.deletePrevious = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var bucket, documents, newDocument, oldSession;
+            var bucket_5, documents, newDocument_1;
+            var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
                         if (!_a.sent()) return [3 /*break*/, 4];
-                        bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
-                        return [4 /*yield*/, bucket.find({ filename: "".concat(options.session, ".zip") }).toArray()];
+                        bucket_5 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
+                        return [4 /*yield*/, bucket_5.find({ filename: "".concat(options.session, ".zip") }).toArray()];
                     case 2:
                         documents = _a.sent();
-                        newDocument = documents.reduce(function (a, b) { return a.uploadDate > b.uploadDate ? a : b; });
-                        return [4 /*yield*/, this.checkValidZip(options.session, newDocument._id)];
+                        newDocument_1 = documents.reduce(function (a, b) { return a.uploadDate > b.uploadDate ? a : b; });
+                        return [4 /*yield*/, this.checkValidZip({ session: options.session, documentId: newDocument_1._id })];
                     case 3:
                         if (!(_a.sent())) {
                             console.log('File is corrupted, deleting...');
-                            return [2 /*return*/, bucket.delete(newDocument._id)];
+                            return [2 /*return*/, bucket_5.delete(newDocument_1._id)];
                         }
                         if (documents.length > 1) {
-                            oldSession = documents.reduce(function (a, b) { return a.uploadDate < b.uploadDate ? a : b; });
-                            return [2 /*return*/, bucket.delete(oldSession._id)];
+                            return [2 /*return*/, documents.filter(function (doc) { return doc._id != newDocument_1._id; }).map(function (old) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+                                    return [2 /*return*/, bucket_5.delete(old._id)];
+                                }); }); })];
                         }
                         _a.label = 4;
                     case 4: return [2 /*return*/];

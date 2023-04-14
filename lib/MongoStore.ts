@@ -48,6 +48,12 @@ export class MongoStore {
                 fs.createReadStream(`${options.session}.zip`)
                     .pipe(bucket.openUploadStream(`${options.session}.zip`))
                     .on('error', err => reject(err))
+                    .on('finish', async (file: any) => {
+                        if (file.length != fs.readFileSync(`${options.session}.zip`).length) {
+                            await bucket.delete(file._id);
+                            reject(new Error('The uploaded file is corrupted.'));
+                        }
+                    })
                     .on('close', async () => {
                         await this.deletePrevious(options);
                         resolve?.call(undefined);
@@ -58,19 +64,20 @@ export class MongoStore {
 
     async extract(options: { session: string, path: string }): Promise<void> {
         if (await this.isConnectionReady()) {
-            const bucket: any = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
-            return new Promise((resolve, reject) => {
-                bucket.openDownloadStreamByName(`${options.session}.zip`)
-                    .pipe(fs.createWriteStream(options.path))
-                    .on('error', (err: any) => reject(err))
-                    .on('close', async () => {
-                        const zip = new AdmZip(options.path);
-                        if (!zip.test()) {
-                            reject(new Error('The downloaded file is corrupted.'));
-                        } else {
-                            resolve()
-                        }
-                    });
+            const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
+            return new Promise(async (resolve, reject) => {
+                const documents = await bucket.find({ filename: `${options.session}.zip` }).toArray();
+                for await (const doc of documents) {
+                    if (await this.checkValidZip({ session: options.session, documentId: doc._id, path: options.path })) {
+                        break;
+                    }
+                }
+                const zip = new AdmZip(options.path);
+                if (!zip.test()) {
+                    reject(new Error('The downloaded file is corrupted.'));
+                } else {
+                    resolve()
+                }
             });
         }
     }
@@ -88,21 +95,21 @@ export class MongoStore {
         }
     }
 
-    private async checkValidZip(session: string, documentId: ObjectId): Promise<boolean> {
+    private async checkValidZip(options: { session: string, documentId: ObjectId, path?: string }): Promise<boolean> {
         if (await this.isConnectionReady()) {
-            const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${session}` });
+            const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
             return new Promise((resolve) => {
-                const path = `./${documentId}.zip`;
-                bucket.openDownloadStream(documentId).pipe(fs.createWriteStream(path))
+                const path = options.path ?? `./${options.documentId}.zip`;
+                bucket.openDownloadStream(options.documentId).pipe(fs.createWriteStream(path))
                     .on('error', () => resolve(false))
                     .on('close', async () => {
                         const zip = new AdmZip(path);
-                        if (!zip.test()) {
+                        if (!zip.test())
                             resolve(false)
-                        } else {
+                        else
                             resolve(true)
-                        }
-                        fs.rmSync(path);
+                        if (!options.path)
+                            fs.rmSync(path);
                     });
             })
         }
@@ -115,14 +122,13 @@ export class MongoStore {
             const documents = await bucket.find({ filename: `${options.session}.zip` }).toArray();
 
             const newDocument = documents.reduce((a: any, b: any) => a.uploadDate > b.uploadDate ? a : b);
-            if (!await this.checkValidZip(options.session, newDocument._id)) {
+            if (!await this.checkValidZip({ session: options.session, documentId: newDocument._id })) {
                 console.log('File is corrupted, deleting...');
                 return bucket.delete(newDocument._id);
             }
 
             if (documents.length > 1) {
-                const oldSession = documents.reduce((a: any, b: any) => a.uploadDate < b.uploadDate ? a : b);
-                return bucket.delete(oldSession._id);
+                return documents.filter((doc: any) => doc._id != newDocument._id).map(async (old) => bucket.delete(old._id));
             }
         }
     }
