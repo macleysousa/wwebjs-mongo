@@ -49,8 +49,8 @@ export class MongoStore {
                     .pipe(bucket.openUploadStream(`${options.session}.zip`))
                     .on('error', err => reject(err))
                     .on('close', async () => {
-                        await this.deletePrevious(options);
                         resolve?.call(undefined);
+                        this.deletePrevious(options);
                     });
             });
         }
@@ -102,8 +102,6 @@ export class MongoStore {
                             resolve(false)
                         else
                             resolve(true)
-                        if (!options.path)
-                            fs.rmSync(path);
                     });
             })
         }
