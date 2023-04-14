@@ -144,9 +144,13 @@ var MongoStore = /** @class */ (function () {
                                         .on('error', function (err) { return reject(err); })
                                         .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
                                         return __generator(this, function (_a) {
-                                            resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
-                                            this.deletePrevious(options);
-                                            return [2 /*return*/];
+                                            switch (_a.label) {
+                                                case 0: return [4 /*yield*/, this.deletePrevious(options)];
+                                                case 1:
+                                                    _a.sent();
+                                                    resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
+                                                    return [2 /*return*/];
+                                            }
                                         });
                                     }); });
                                 })];
