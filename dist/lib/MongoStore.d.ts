@@ -19,7 +19,6 @@ export declare class MongoStore {
     delete(options: {
         session: string;
     }): Promise<void>;
-    private dowloadZip;
     private checkValidZip;
     private deletePrevious;
 }

@@ -57,25 +57,15 @@ export class MongoStore {
     }
 
     async extract(options: { session: string, path: string }): Promise<void> {
-        if (!await this.sessionExists({ session: options.session })) {
-            throw new Error('Session does not exist.')
-        }
-
         if (await this.isConnectionReady()) {
-            const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
-            return new Promise(async (resolve, reject) => {
-                const documents = await bucket.find({ filename: `${options.session}.zip` }).toArray();
-
-                for await (const doc of documents) {
-                    if (await this.checkValidZip({ session: options.session, documentId: doc._id, path: options.path })) {
-                        await this.dowloadZip({ session: options.session, path: options.path });
-                        resolve()
-                        return;
-                    }
-                }
-
-                reject(new Error('The downloaded file is corrupted.'));
-                resolve();
+            var bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, {
+                bucketName: `whatsapp-${options.session}`
+            });
+            return new Promise((resolve, reject) => {
+                bucket.openDownloadStreamByName(`${options.session}.zip`)
+                    .pipe(fs.createWriteStream(options.path))
+                    .on('error', err => reject(err))
+                    .on('close', () => resolve());
             });
         }
     }
@@ -91,18 +81,6 @@ export class MongoStore {
                 return bucket.delete(doc._id);
             });
         }
-    }
-
-    private async dowloadZip(options: { session: string, path: string }): Promise<void> {
-        var bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, {
-            bucketName: `whatsapp-${options.session}`
-        });
-        return new Promise((resolve, reject) => {
-            bucket.openDownloadStreamByName(`${options.session}.zip`)
-                .pipe(fs.createWriteStream(options.path))
-                .on('error', err => reject(err))
-                .on('close', () => resolve());
-        });
     }
 
     private async checkValidZip(options: { session: string, documentId: ObjectId, path: string }): Promise<boolean> {

@@ -58,13 +58,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __asyncValues = (this && this.__asyncValues) || function (o) {
-    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var m = o[Symbol.asyncIterator], i;
-    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
-    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
-    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -162,78 +155,21 @@ var MongoStore = /** @class */ (function () {
     };
     MongoStore.prototype.extract = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var bucket_2;
-            var _this = this;
+            var bucket;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.sessionExists({ session: options.session })];
+                    case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
-                        if (!(_a.sent())) {
-                            throw new Error('Session does not exist.');
-                        }
-                        return [4 /*yield*/, this.isConnectionReady()];
-                    case 2:
                         if (_a.sent()) {
-                            bucket_2 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
-                            return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                                    var documents, _a, documents_1, documents_1_1, doc, e_1_1;
-                                    var _b, e_1, _c, _d;
-                                    return __generator(this, function (_e) {
-                                        switch (_e.label) {
-                                            case 0: return [4 /*yield*/, bucket_2.find({ filename: "".concat(options.session, ".zip") }).toArray()];
-                                            case 1:
-                                                documents = _e.sent();
-                                                _e.label = 2;
-                                            case 2:
-                                                _e.trys.push([2, 12, 13, 18]);
-                                                _a = true, documents_1 = __asyncValues(documents);
-                                                _e.label = 3;
-                                            case 3: return [4 /*yield*/, documents_1.next()];
-                                            case 4:
-                                                if (!(documents_1_1 = _e.sent(), _b = documents_1_1.done, !_b)) return [3 /*break*/, 11];
-                                                _d = documents_1_1.value;
-                                                _a = false;
-                                                _e.label = 5;
-                                            case 5:
-                                                _e.trys.push([5, , 9, 10]);
-                                                doc = _d;
-                                                return [4 /*yield*/, this.checkValidZip({ session: options.session, documentId: doc._id, path: options.path })];
-                                            case 6:
-                                                if (!_e.sent()) return [3 /*break*/, 8];
-                                                return [4 /*yield*/, this.dowloadZip({ session: options.session, path: options.path })];
-                                            case 7:
-                                                _e.sent();
-                                                resolve();
-                                                return [2 /*return*/];
-                                            case 8: return [3 /*break*/, 10];
-                                            case 9:
-                                                _a = true;
-                                                return [7 /*endfinally*/];
-                                            case 10: return [3 /*break*/, 3];
-                                            case 11: return [3 /*break*/, 18];
-                                            case 12:
-                                                e_1_1 = _e.sent();
-                                                e_1 = { error: e_1_1 };
-                                                return [3 /*break*/, 18];
-                                            case 13:
-                                                _e.trys.push([13, , 16, 17]);
-                                                if (!(!_a && !_b && (_c = documents_1.return))) return [3 /*break*/, 15];
-                                                return [4 /*yield*/, _c.call(documents_1)];
-                                            case 14:
-                                                _e.sent();
-                                                _e.label = 15;
-                                            case 15: return [3 /*break*/, 17];
-                                            case 16:
-                                                if (e_1) throw e_1.error;
-                                                return [7 /*endfinally*/];
-                                            case 17: return [7 /*endfinally*/];
-                                            case 18:
-                                                reject(new Error('The downloaded file is corrupted.'));
-                                                resolve();
-                                                return [2 /*return*/];
-                                        }
-                                    });
-                                }); })];
+                            bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, {
+                                bucketName: "whatsapp-".concat(options.session)
+                            });
+                            return [2 /*return*/, new Promise(function (resolve, reject) {
+                                    bucket.openDownloadStreamByName("".concat(options.session, ".zip"))
+                                        .pipe(fs.createWriteStream(options.path))
+                                        .on('error', function (err) { return reject(err); })
+                                        .on('close', function () { return resolve(); });
+                                })];
                         }
                         return [2 /*return*/];
                 }
@@ -242,22 +178,22 @@ var MongoStore = /** @class */ (function () {
     };
     MongoStore.prototype.delete = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var bucket_3, documents;
+            var bucket_2, documents;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
                         if (!_a.sent()) return [3 /*break*/, 3];
-                        bucket_3 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
-                        return [4 /*yield*/, bucket_3.find({
+                        bucket_2 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
+                        return [4 /*yield*/, bucket_2.find({
                                 filename: "".concat(options.session, ".zip")
                             }).toArray()];
                     case 2:
                         documents = _a.sent();
                         documents.map(function (doc) { return __awaiter(_this, void 0, void 0, function () {
                             return __generator(this, function (_a) {
-                                return [2 /*return*/, bucket_3.delete(doc._id)];
+                                return [2 /*return*/, bucket_2.delete(doc._id)];
                             });
                         }); });
                         _a.label = 3;
@@ -266,35 +202,19 @@ var MongoStore = /** @class */ (function () {
             });
         });
     };
-    MongoStore.prototype.dowloadZip = function (options) {
-        return __awaiter(this, void 0, void 0, function () {
-            var bucket;
-            return __generator(this, function (_a) {
-                bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, {
-                    bucketName: "whatsapp-".concat(options.session)
-                });
-                return [2 /*return*/, new Promise(function (resolve, reject) {
-                        bucket.openDownloadStreamByName("".concat(options.session, ".zip"))
-                            .pipe(fs.createWriteStream(options.path))
-                            .on('error', function (err) { return reject(err); })
-                            .on('close', function () { return resolve(); });
-                    })];
-            });
-        });
-    };
     MongoStore.prototype.checkValidZip = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var bucket_4;
+            var bucket_3;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
                         if (_a.sent()) {
-                            bucket_4 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
+                            bucket_3 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                             return [2 /*return*/, new Promise(function (resolve) {
                                     var path = __dirname + "/".concat(options.path);
-                                    bucket_4.openDownloadStream(options.documentId).pipe(fs.createWriteStream(path))
+                                    bucket_3.openDownloadStream(options.documentId).pipe(fs.createWriteStream(path))
                                         .on('error', function () { return resolve(false); })
                                         .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
                                         var zip;
@@ -317,15 +237,15 @@ var MongoStore = /** @class */ (function () {
     };
     MongoStore.prototype.deletePrevious = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var bucket_5, documents, newDocument_1, path, checaked;
+            var bucket_4, documents, newDocument_1, path, checaked;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
                         if (!_a.sent()) return [3 /*break*/, 4];
-                        bucket_5 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
-                        return [4 /*yield*/, bucket_5.find({ filename: "".concat(options.session, ".zip") }).toArray()];
+                        bucket_4 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
+                        return [4 /*yield*/, bucket_4.find({ filename: "".concat(options.session, ".zip") }).toArray()];
                     case 2:
                         documents = _a.sent();
                         newDocument_1 = documents.reduce(function (a, b) { return a.uploadDate > b.uploadDate ? a : b; });
@@ -335,11 +255,11 @@ var MongoStore = /** @class */ (function () {
                         checaked = _a.sent();
                         if (!checaked) {
                             console.log('File is corrupted, deleting...');
-                            return [2 /*return*/, bucket_5.delete(newDocument_1._id)];
+                            return [2 /*return*/, bucket_4.delete(newDocument_1._id)];
                         }
                         if (documents.length > 1) {
                             return [2 /*return*/, documents.filter(function (doc) { return doc._id != newDocument_1._id; }).map(function (old) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
-                                    return [2 /*return*/, bucket_5.delete(old._id)];
+                                    return [2 /*return*/, bucket_4.delete(old._id)];
                                 }); }); })];
                         }
                         _a.label = 4;
