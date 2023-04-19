@@ -243,12 +243,19 @@ var MongoStore = /** @class */ (function () {
                         if (_a.sent()) {
                             bucket_3 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                             return [2 /*return*/, new Promise(function (resolve) {
-                                    var path = __dirname + "/".concat(options.path);
+                                    var path = __dirname + "".concat(options.documentId, ".zip");
+                                    if (_this.debug) {
+                                        console.log(path);
+                                    }
                                     bucket_3.openDownloadStream(options.documentId).pipe(fs.createWriteStream(path))
                                         .on('error', function () { return resolve(false); })
                                         .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
                                         var zip;
                                         return __generator(this, function (_a) {
+                                            if (fs.existsSync(path) == false) {
+                                                resolve(false);
+                                                throw new Error('File not found');
+                                            }
                                             zip = new adm_zip_1.default(path);
                                             if (!zip.test())
                                                 resolve(false);
@@ -267,33 +274,30 @@ var MongoStore = /** @class */ (function () {
     };
     MongoStore.prototype.deletePrevious = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var bucket_4, documents, newDocument_1, path, checaked;
+            var bucket_4, documents, newDocument_1;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
-                        if (!_a.sent()) return [3 /*break*/, 4];
+                        if (!_a.sent()) return [3 /*break*/, 3];
                         bucket_4 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                         return [4 /*yield*/, bucket_4.find({ filename: "".concat(options.session, ".zip") }).toArray()];
                     case 2:
                         documents = _a.sent();
                         newDocument_1 = documents.reduce(function (a, b) { return a.uploadDate > b.uploadDate ? a : b; });
-                        path = "./".concat(newDocument_1._id, ".zip");
-                        return [4 /*yield*/, this.checkValidZip({ session: options.session, documentId: newDocument_1._id, path: path })];
-                    case 3:
-                        checaked = _a.sent();
-                        if (!checaked) {
-                            console.log('File is corrupted, deleting...');
-                            return [2 /*return*/, bucket_4.delete(newDocument_1._id)];
-                        }
+                        // const valid = await this.checkValidZip({ session: options.session, documentId: newDocument._id });
+                        // if (valid == false) {
+                        //     console.log('File is corrupted, deleting...');
+                        //     return bucket.delete(newDocument._id);
+                        // }
                         if (documents.length > 1) {
-                            return [2 /*return*/, documents.filter(function (doc) { return doc._id != newDocument_1._id; }).map(function (old) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
-                                    return [2 /*return*/, bucket_4.delete(old._id)];
-                                }); }); })];
+                            documents.filter(function (doc) { return doc._id != newDocument_1._id; }).map(function (old) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+                                return [2 /*return*/, bucket_4.delete(old._id)];
+                            }); }); });
                         }
-                        _a.label = 4;
-                    case 4: return [2 /*return*/];
+                        _a.label = 3;
+                    case 3: return [2 /*return*/];
                 }
             });
         });
