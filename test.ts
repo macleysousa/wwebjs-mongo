@@ -8,10 +8,11 @@ async function test(id: string) {
     const MONGODB_URI: string = process.env.MONGODB_URI as string;
     const connect = await mongoose.connect(MONGODB_URI);
 
-    const store = new MongoStore({ mongoose: connect });
+    const store = new MongoStore({ mongoose: connect, debug: true });
     const exist = await store.sessionExists({ session: `RemoteAuth-${id}` })
     console.log(id, exist)
-    await store.extract({ session: `RemoteAuth-${id}`, path: `./RemoteAuth-${id}.zip`, });
+    await store.save({ session: `RemoteAuth-${id}` });
+    //await store.extract({ session: `RemoteAuth-${id}`, path: `./RemoteAuth-${id}.zip`, });
     if (exist) {
         // await store.extract({ session: `RemoteAuth-${id}`, path: `./RemoteAuth-${id}.zip`, });
         console.log('saved');

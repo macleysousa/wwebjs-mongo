@@ -101,14 +101,22 @@ export class MongoStore {
         }
     }
 
-    private async checkValidZip(options: { session: string, documentId: ObjectId, path: string }): Promise<boolean> {
+    private async checkValidZip(options: { session: string, documentId: ObjectId }): Promise<boolean> {
         if (await this.isConnectionReady()) {
             const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
             return new Promise((resolve) => {
-                const path = __dirname + `/${options.path}`;
+                const path = __dirname + `${options.documentId}.zip`;
+
+                if (this.debug) { console.log(path); }
+
                 bucket.openDownloadStream(options.documentId).pipe(fs.createWriteStream(path))
                     .on('error', () => resolve(false))
                     .on('close', async () => {
+                        if (fs.existsSync(path) == false) {
+                            resolve(false);
+                            throw new Error('File not found');
+                        }
+
                         const zip = new AdmZip(path);
                         if (!zip.test())
                             resolve(false)
@@ -129,9 +137,7 @@ export class MongoStore {
 
             const newDocument = documents.reduce((a: any, b: any) => a.uploadDate > b.uploadDate ? a : b);
 
-            const path = `./${newDocument._id}.zip`
-
-            const checaked = await this.checkValidZip({ session: options.session, documentId: newDocument._id, path: path });
+            const checaked = await this.checkValidZip({ session: options.session, documentId: newDocument._id });
 
             if (!checaked) {
                 console.log('File is corrupted, deleting...');
