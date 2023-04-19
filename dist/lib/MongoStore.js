@@ -166,12 +166,17 @@ var MongoStore = /** @class */ (function () {
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.isConnectionReady()];
+                    case 0: return [4 /*yield*/, this.sessionExists({ session: options.session })];
                     case 1:
+                        if (!(_a.sent())) {
+                            throw new Error('Session does not exist.');
+                        }
+                        return [4 /*yield*/, this.isConnectionReady()];
+                    case 2:
                         if (_a.sent()) {
                             bucket_2 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                             return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                                    var documents, _a, documents_1, documents_1_1, doc, e_1_1, zip;
+                                    var documents, _a, documents_1, documents_1_1, doc, e_1_1;
                                     var _b, e_1, _c, _d;
                                     return __generator(this, function (_e) {
                                         switch (_e.label) {
@@ -180,53 +185,51 @@ var MongoStore = /** @class */ (function () {
                                                 documents = _e.sent();
                                                 _e.label = 2;
                                             case 2:
-                                                _e.trys.push([2, 10, 11, 16]);
+                                                _e.trys.push([2, 12, 13, 18]);
                                                 _a = true, documents_1 = __asyncValues(documents);
                                                 _e.label = 3;
                                             case 3: return [4 /*yield*/, documents_1.next()];
                                             case 4:
-                                                if (!(documents_1_1 = _e.sent(), _b = documents_1_1.done, !_b)) return [3 /*break*/, 9];
+                                                if (!(documents_1_1 = _e.sent(), _b = documents_1_1.done, !_b)) return [3 /*break*/, 11];
                                                 _d = documents_1_1.value;
                                                 _a = false;
                                                 _e.label = 5;
                                             case 5:
-                                                _e.trys.push([5, , 7, 8]);
+                                                _e.trys.push([5, , 9, 10]);
                                                 doc = _d;
                                                 return [4 /*yield*/, this.checkValidZip({ session: options.session, documentId: doc._id, path: options.path })];
                                             case 6:
-                                                if (_e.sent()) {
-                                                    return [3 /*break*/, 9];
-                                                }
-                                                return [3 /*break*/, 8];
+                                                if (!_e.sent()) return [3 /*break*/, 8];
+                                                return [4 /*yield*/, this.dowloadZip({ session: options.session, path: options.path })];
                                             case 7:
+                                                _e.sent();
+                                                resolve();
+                                                return [2 /*return*/];
+                                            case 8: return [3 /*break*/, 10];
+                                            case 9:
                                                 _a = true;
                                                 return [7 /*endfinally*/];
-                                            case 8: return [3 /*break*/, 3];
-                                            case 9: return [3 /*break*/, 16];
-                                            case 10:
+                                            case 10: return [3 /*break*/, 3];
+                                            case 11: return [3 /*break*/, 18];
+                                            case 12:
                                                 e_1_1 = _e.sent();
                                                 e_1 = { error: e_1_1 };
-                                                return [3 /*break*/, 16];
-                                            case 11:
-                                                _e.trys.push([11, , 14, 15]);
-                                                if (!(!_a && !_b && (_c = documents_1.return))) return [3 /*break*/, 13];
+                                                return [3 /*break*/, 18];
+                                            case 13:
+                                                _e.trys.push([13, , 16, 17]);
+                                                if (!(!_a && !_b && (_c = documents_1.return))) return [3 /*break*/, 15];
                                                 return [4 /*yield*/, _c.call(documents_1)];
-                                            case 12:
-                                                _e.sent();
-                                                _e.label = 13;
-                                            case 13: return [3 /*break*/, 15];
                                             case 14:
+                                                _e.sent();
+                                                _e.label = 15;
+                                            case 15: return [3 /*break*/, 17];
+                                            case 16:
                                                 if (e_1) throw e_1.error;
                                                 return [7 /*endfinally*/];
-                                            case 15: return [7 /*endfinally*/];
-                                            case 16:
-                                                zip = new adm_zip_1.default(options.path);
-                                                if (!zip.test()) {
-                                                    reject(new Error('The downloaded file is corrupted.'));
-                                                }
-                                                else {
-                                                    resolve();
-                                                }
+                                            case 17: return [7 /*endfinally*/];
+                                            case 18:
+                                                reject(new Error('The downloaded file is corrupted.'));
+                                                resolve();
                                                 return [2 /*return*/];
                                         }
                                     });
@@ -263,6 +266,22 @@ var MongoStore = /** @class */ (function () {
             });
         });
     };
+    MongoStore.prototype.dowloadZip = function (options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var bucket;
+            return __generator(this, function (_a) {
+                bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, {
+                    bucketName: "whatsapp-".concat(options.session)
+                });
+                return [2 /*return*/, new Promise(function (resolve, reject) {
+                        bucket.openDownloadStreamByName("".concat(options.session, ".zip"))
+                            .pipe(fs.createWriteStream(options.path))
+                            .on('error', function (err) { return reject(err); })
+                            .on('close', function () { return resolve(); });
+                    })];
+            });
+        });
+    };
     MongoStore.prototype.checkValidZip = function (options) {
         return __awaiter(this, void 0, void 0, function () {
             var bucket_4;
@@ -274,7 +293,7 @@ var MongoStore = /** @class */ (function () {
                         if (_a.sent()) {
                             bucket_4 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                             return [2 /*return*/, new Promise(function (resolve) {
-                                    var path = options.path;
+                                    var path = __dirname + "/".concat(options.path);
                                     bucket_4.openDownloadStream(options.documentId).pipe(fs.createWriteStream(path))
                                         .on('error', function () { return resolve(false); })
                                         .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
@@ -285,6 +304,7 @@ var MongoStore = /** @class */ (function () {
                                                 resolve(false);
                                             else
                                                 resolve(true);
+                                            fs.rmSync(path);
                                             return [2 /*return*/];
                                         });
                                     }); });
@@ -297,7 +317,7 @@ var MongoStore = /** @class */ (function () {
     };
     MongoStore.prototype.deletePrevious = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var bucket_5, documents, newDocument_1, path_1, checaked;
+            var bucket_5, documents, newDocument_1, path, checaked;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -309,12 +329,8 @@ var MongoStore = /** @class */ (function () {
                     case 2:
                         documents = _a.sent();
                         newDocument_1 = documents.reduce(function (a, b) { return a.uploadDate > b.uploadDate ? a : b; });
-                        path_1 = "./".concat(newDocument_1._id, ".zip");
-                        return [4 /*yield*/, this.checkValidZip({
-                                session: options.session,
-                                documentId: newDocument_1._id,
-                                path: path_1
-                            }).finally(function () { return fs.rmSync(path_1); })];
+                        path = "./".concat(newDocument_1._id, ".zip");
+                        return [4 /*yield*/, this.checkValidZip({ session: options.session, documentId: newDocument_1._id, path: path })];
                     case 3:
                         checaked = _a.sent();
                         if (!checaked) {

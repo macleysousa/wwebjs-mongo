@@ -11,13 +11,13 @@ async function test(id: string) {
     const store = new MongoStore({ mongoose: connect });
     const exist = await store.sessionExists({ session: `RemoteAuth-${id}` })
     console.log(id, exist)
-    await store.save({ session: `RemoteAuth-${id}` });
+    await store.extract({ session: `RemoteAuth-${id}`, path: `./RemoteAuth-${id}.zip`, });
     if (exist) {
         // await store.extract({ session: `RemoteAuth-${id}`, path: `./RemoteAuth-${id}.zip`, });
         console.log('saved');
     }
 }
 
-//test('752a9323-cb9d-40f1-85ff-e918ab337220');
-//test('8041bd74-563f-4f5f-a3b2-b18c8485ab1d');
-test('31377f71-a483-4971-aae8-4b34e045db2a');
+test('f507849d-410f-46e4-bfb7-a0424abb26c0');
+// test('8041bd74-563f-4f5f-a3b2-b18c8485ab1d');
+// test('31377f71-a483-4971-aae8-4b34e045db2a');
