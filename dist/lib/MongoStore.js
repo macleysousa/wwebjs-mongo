@@ -64,6 +64,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MongoStore = void 0;
 var fs = __importStar(require("fs"));
+var path = __importStar(require("path"));
 var mongoose_1 = require("mongoose");
 var adm_zip_1 = __importDefault(require("adm-zip"));
 var MongoStore = /** @class */ (function () {
@@ -184,15 +185,24 @@ var MongoStore = /** @class */ (function () {
                                 bucketName: "whatsapp-".concat(options.session)
                             });
                             return [2 /*return*/, new Promise(function (resolve, reject) {
+                                    var _a;
                                     bucket.openDownloadStreamByName("".concat(options.session, ".zip"))
-                                        .pipe(fs.createWriteStream(options.path))
+                                        .pipe(fs.createWriteStream((_a = options.path) !== null && _a !== void 0 ? _a : "".concat(options.session, ".zip")))
                                         .on('error', function (err) { return reject(err); })
-                                        .on('close', function () {
-                                        resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
-                                        if (_this.debug) {
-                                            console.log('Session extracted from MongoDB');
-                                        }
-                                    });
+                                        .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
+                                        return __generator(this, function (_a) {
+                                            switch (_a.label) {
+                                                case 0: return [4 /*yield*/, this.deley(1000 * 5)];
+                                                case 1:
+                                                    _a.sent();
+                                                    resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
+                                                    if (this.debug) {
+                                                        console.log('Session extracted from MongoDB');
+                                                    }
+                                                    return [2 /*return*/];
+                                            }
+                                        });
+                                    }); });
                                 })];
                         }
                         return [2 /*return*/];
@@ -243,25 +253,29 @@ var MongoStore = /** @class */ (function () {
                         if (_a.sent()) {
                             bucket_3 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                             return [2 /*return*/, new Promise(function (resolve) {
-                                    var path = __dirname + "".concat(options.documentId, ".zip");
+                                    var pathFile = path.join(__dirname, "".concat(options.session, ".zip"));
                                     if (_this.debug) {
-                                        console.log(path);
+                                        console.log(pathFile);
                                     }
-                                    bucket_3.openDownloadStream(options.documentId).pipe(fs.createWriteStream(path))
+                                    bucket_3.openDownloadStream(options.documentId).pipe(fs.createWriteStream(pathFile))
                                         .on('error', function () { return resolve(false); })
                                         .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
                                         var zip;
                                         return __generator(this, function (_a) {
-                                            if (fs.existsSync(path) == false) {
+                                            if (fs.existsSync(pathFile) == false) {
                                                 resolve(false);
                                                 throw new Error('File not found');
                                             }
-                                            zip = new adm_zip_1.default(path);
-                                            if (!zip.test())
+                                            zip = new adm_zip_1.default(pathFile);
+                                            if (!zip.test()) {
+                                                console.log('File is corrupted');
                                                 resolve(false);
-                                            else
+                                            }
+                                            else {
+                                                console.log('File is valid');
                                                 resolve(true);
-                                            fs.rmSync(path);
+                                            }
+                                            fs.rmSync(pathFile);
                                             return [2 /*return*/];
                                         });
                                     }); });
@@ -274,33 +288,38 @@ var MongoStore = /** @class */ (function () {
     };
     MongoStore.prototype.deletePrevious = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var bucket_4, documents, newDocument_1;
+            var bucket_4, documents, newDocument_1, valid;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
-                        if (!_a.sent()) return [3 /*break*/, 3];
+                        if (!_a.sent()) return [3 /*break*/, 4];
                         bucket_4 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                         return [4 /*yield*/, bucket_4.find({ filename: "".concat(options.session, ".zip") }).toArray()];
                     case 2:
                         documents = _a.sent();
                         newDocument_1 = documents.reduce(function (a, b) { return a.uploadDate > b.uploadDate ? a : b; });
-                        // const valid = await this.checkValidZip({ session: options.session, documentId: newDocument._id });
-                        // if (valid == false) {
-                        //     console.log('File is corrupted, deleting...');
-                        //     return bucket.delete(newDocument._id);
-                        // }
+                        return [4 /*yield*/, this.checkValidZip({ session: options.session, documentId: newDocument_1._id })];
+                    case 3:
+                        valid = _a.sent();
+                        if (valid == false) {
+                            console.log('File is corrupted, deleting...');
+                            return [2 /*return*/, bucket_4.delete(newDocument_1._id)];
+                        }
                         if (documents.length > 1) {
                             documents.filter(function (doc) { return doc._id != newDocument_1._id; }).map(function (old) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
                                 return [2 /*return*/, bucket_4.delete(old._id)];
                             }); }); });
                         }
-                        _a.label = 3;
-                    case 3: return [2 /*return*/];
+                        _a.label = 4;
+                    case 4: return [2 /*return*/];
                 }
             });
         });
+    };
+    MongoStore.prototype.deley = function (ms) {
+        return new Promise(function (resolve) { return setTimeout(resolve, ms); });
     };
     return MongoStore;
 }());

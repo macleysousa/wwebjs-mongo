@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as path from 'path';
 import { ConnectionStates, Mongoose } from 'mongoose';
 import AdmZip from 'adm-zip';
 import { ObjectId } from 'bson';
@@ -74,9 +75,10 @@ export class MongoStore {
             });
             return new Promise((resolve, reject) => {
                 bucket.openDownloadStreamByName(`${options.session}.zip`)
-                    .pipe(fs.createWriteStream(options.path))
+                    .pipe(fs.createWriteStream(options.path ?? `${options.session}.zip`))
                     .on('error', err => reject(err))
-                    .on('close', () => {
+                    .on('close', async () => {
+                        await this.deley(1000 * 5);
                         resolve?.call(undefined);
                         if (this.debug) { console.log('Session extracted from MongoDB'); }
                     });
@@ -105,25 +107,29 @@ export class MongoStore {
         if (await this.isConnectionReady()) {
             const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
             return new Promise((resolve) => {
-                const path = __dirname + `${options.documentId}.zip`;
+                const pathFile = path.join(__dirname, `${options.session}.zip`);
 
-                if (this.debug) { console.log(path); }
+                if (this.debug) { console.log(pathFile); }
 
-                bucket.openDownloadStream(options.documentId).pipe(fs.createWriteStream(path))
+                bucket.openDownloadStream(options.documentId).pipe(fs.createWriteStream(pathFile))
                     .on('error', () => resolve(false))
                     .on('close', async () => {
-                        if (fs.existsSync(path) == false) {
+                        if (fs.existsSync(pathFile) == false) {
                             resolve(false);
                             throw new Error('File not found');
                         }
 
-                        const zip = new AdmZip(path);
-                        if (!zip.test())
+                        const zip = new AdmZip(pathFile);
+                        if (!zip.test()) {
+                            console.log('File is corrupted');
                             resolve(false)
-                        else
+                        }
+                        else {
+                            console.log('File is valid');
                             resolve(true)
+                        }
 
-                        fs.rmSync(path);
+                        fs.rmSync(pathFile);
                     });
             })
         }
@@ -137,17 +143,21 @@ export class MongoStore {
 
             const newDocument = documents.reduce((a: any, b: any) => a.uploadDate > b.uploadDate ? a : b);
 
-            // const valid = await this.checkValidZip({ session: options.session, documentId: newDocument._id });
+            const valid = await this.checkValidZip({ session: options.session, documentId: newDocument._id });
 
-            // if (valid == false) {
-            //     console.log('File is corrupted, deleting...');
+            if (valid == false) {
+                console.log('File is corrupted, deleting...');
 
-            //     return bucket.delete(newDocument._id);
-            // }
+                return bucket.delete(newDocument._id);
+            }
 
             if (documents.length > 1) {
                 documents.filter((doc: any) => doc._id != newDocument._id).map(async (old) => bucket.delete(old._id))
             }
         }
+    }
+
+    private deley(ms: number) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 }

@@ -23,5 +23,6 @@ export declare class MongoStore {
     }): Promise<void>;
     private checkValidZip;
     private deletePrevious;
+    private deley;
 }
 export {};
