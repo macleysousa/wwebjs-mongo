@@ -5,17 +5,22 @@ import { ObjectId } from 'bson';
 
 type Props = {
     mongoose: Mongoose;
+    debug?: boolean;
 };
 
 export class MongoStore {
     private mongoose: Mongoose;
+    private debug: boolean;
 
-    constructor({ mongoose }: Props) {
+    constructor({ mongoose, debug }: Props) {
         if (!mongoose) throw new Error('A valid Mongoose instance is required for MongoStore.');
         this.mongoose = mongoose;
+        this.debug = debug ?? false;
     }
 
     async isConnectionReady(): Promise<boolean> {
+        if (this.debug) { console.log('Checking connection to MongoDB'); }
+
         while (this.mongoose.connection.readyState !== 1) {
             switch (this.mongoose.connection.readyState) {
                 case ConnectionStates.connecting:
@@ -33,6 +38,7 @@ export class MongoStore {
 
     async sessionExists(options: { session: string }): Promise<boolean> {
         if (await this.isConnectionReady()) {
+            if (this.debug) { console.log('Checking if session exists in MongoDB'); }
             const collectionName = `whatsapp-${options.session}.files`;
             const collections = await this.mongoose.connection.db?.listCollections()?.toArray();
             const collectionExists = collections?.some(collection => collection.name === collectionName);
@@ -43,6 +49,8 @@ export class MongoStore {
 
     async save(options: { session: string }): Promise<void> {
         if (await this.isConnectionReady()) {
+            if (this.debug) { console.log('Saving session to MongoDB'); }
+
             const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
             return new Promise((resolve, reject) => {
                 fs.createReadStream(`${options.session}.zip`)
@@ -51,6 +59,7 @@ export class MongoStore {
                     .on('close', async () => {
                         await this.deletePrevious(options);
                         resolve?.call(undefined);
+                        if (this.debug) { console.log('Session saved to MongoDB'); }
                     });
             });
         }
@@ -58,6 +67,8 @@ export class MongoStore {
 
     async extract(options: { session: string, path: string }): Promise<void> {
         if (await this.isConnectionReady()) {
+            if (this.debug) { console.log('Extracting session from MongoDB'); }
+
             var bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, {
                 bucketName: `whatsapp-${options.session}`
             });
@@ -65,13 +76,18 @@ export class MongoStore {
                 bucket.openDownloadStreamByName(`${options.session}.zip`)
                     .pipe(fs.createWriteStream(options.path))
                     .on('error', err => reject(err))
-                    .on('close', () => resolve());
+                    .on('close', () => {
+                        resolve?.call(undefined);
+                        if (this.debug) { console.log('Session extracted from MongoDB'); }
+                    });
             });
         }
     }
 
     async delete(options: { session: string }) {
         if (await this.isConnectionReady()) {
+            if (this.debug) { console.log('Deleting session from MongoDB'); }
+
             const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
             const documents = await bucket.find({
                 filename: `${options.session}.zip`
@@ -80,6 +96,8 @@ export class MongoStore {
             documents.map(async doc => {
                 return bucket.delete(doc._id);
             });
+
+            if (this.debug) { console.log('Session deleted from MongoDB'); }
         }
     }
 

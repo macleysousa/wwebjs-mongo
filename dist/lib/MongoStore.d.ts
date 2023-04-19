@@ -1,10 +1,12 @@
 import { Mongoose } from 'mongoose';
 type Props = {
     mongoose: Mongoose;
+    debug?: boolean;
 };
 export declare class MongoStore {
     private mongoose;
-    constructor({ mongoose }: Props);
+    private debug;
+    constructor({ mongoose, debug }: Props);
     isConnectionReady(): Promise<boolean>;
     sessionExists(options: {
         session: string;

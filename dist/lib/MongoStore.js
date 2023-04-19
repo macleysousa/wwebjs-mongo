@@ -68,10 +68,11 @@ var mongoose_1 = require("mongoose");
 var adm_zip_1 = __importDefault(require("adm-zip"));
 var MongoStore = /** @class */ (function () {
     function MongoStore(_a) {
-        var mongoose = _a.mongoose;
+        var mongoose = _a.mongoose, debug = _a.debug;
         if (!mongoose)
             throw new Error('A valid Mongoose instance is required for MongoStore.');
         this.mongoose = mongoose;
+        this.debug = debug !== null && debug !== void 0 ? debug : false;
     }
     MongoStore.prototype.isConnectionReady = function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -79,24 +80,29 @@ var MongoStore = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        if (!(this.mongoose.connection.readyState !== 1)) return [3 /*break*/, 7];
+                        if (this.debug) {
+                            console.log('Checking connection to MongoDB');
+                        }
+                        _b.label = 1;
+                    case 1:
+                        if (!(this.mongoose.connection.readyState !== 1)) return [3 /*break*/, 8];
                         _a = this.mongoose.connection.readyState;
                         switch (_a) {
-                            case mongoose_1.ConnectionStates.connecting: return [3 /*break*/, 1];
-                            case mongoose_1.ConnectionStates.disconnecting: return [3 /*break*/, 3];
+                            case mongoose_1.ConnectionStates.connecting: return [3 /*break*/, 2];
+                            case mongoose_1.ConnectionStates.disconnecting: return [3 /*break*/, 4];
                         }
-                        return [3 /*break*/, 5];
-                    case 1: return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 1000); })];
-                    case 2:
-                        _b.sent();
                         return [3 /*break*/, 6];
-                    case 3: return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 1000); })];
-                    case 4:
+                    case 2: return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 1000); })];
+                    case 3:
                         _b.sent();
-                        return [3 /*break*/, 6];
-                    case 5: throw new Error('Connection to MongoDB was disconnected');
-                    case 6: return [3 /*break*/, 0];
-                    case 7: return [2 /*return*/, true];
+                        return [3 /*break*/, 7];
+                    case 4: return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 1000); })];
+                    case 5:
+                        _b.sent();
+                        return [3 /*break*/, 7];
+                    case 6: throw new Error('Connection to MongoDB was disconnected');
+                    case 7: return [3 /*break*/, 1];
+                    case 8: return [2 /*return*/, true];
                 }
             });
         });
@@ -110,6 +116,9 @@ var MongoStore = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
                         if (!_c.sent()) return [3 /*break*/, 3];
+                        if (this.debug) {
+                            console.log('Checking if session exists in MongoDB');
+                        }
                         collectionName_1 = "whatsapp-".concat(options.session, ".files");
                         return [4 /*yield*/, ((_b = (_a = this.mongoose.connection.db) === null || _a === void 0 ? void 0 : _a.listCollections()) === null || _b === void 0 ? void 0 : _b.toArray())];
                     case 2:
@@ -130,6 +139,9 @@ var MongoStore = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
                         if (_a.sent()) {
+                            if (this.debug) {
+                                console.log('Saving session to MongoDB');
+                            }
                             bucket_1 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                             return [2 /*return*/, new Promise(function (resolve, reject) {
                                     fs.createReadStream("".concat(options.session, ".zip"))
@@ -142,6 +154,9 @@ var MongoStore = /** @class */ (function () {
                                                 case 1:
                                                     _a.sent();
                                                     resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
+                                                    if (this.debug) {
+                                                        console.log('Session saved to MongoDB');
+                                                    }
                                                     return [2 /*return*/];
                                             }
                                         });
@@ -156,11 +171,15 @@ var MongoStore = /** @class */ (function () {
     MongoStore.prototype.extract = function (options) {
         return __awaiter(this, void 0, void 0, function () {
             var bucket;
+            var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
                         if (_a.sent()) {
+                            if (this.debug) {
+                                console.log('Extracting session from MongoDB');
+                            }
                             bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, {
                                 bucketName: "whatsapp-".concat(options.session)
                             });
@@ -168,7 +187,12 @@ var MongoStore = /** @class */ (function () {
                                     bucket.openDownloadStreamByName("".concat(options.session, ".zip"))
                                         .pipe(fs.createWriteStream(options.path))
                                         .on('error', function (err) { return reject(err); })
-                                        .on('close', function () { return resolve(); });
+                                        .on('close', function () {
+                                        resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
+                                        if (_this.debug) {
+                                            console.log('Session extracted from MongoDB');
+                                        }
+                                    });
                                 })];
                         }
                         return [2 /*return*/];
@@ -185,6 +209,9 @@ var MongoStore = /** @class */ (function () {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
                         if (!_a.sent()) return [3 /*break*/, 3];
+                        if (this.debug) {
+                            console.log('Deleting session from MongoDB');
+                        }
                         bucket_2 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                         return [4 /*yield*/, bucket_2.find({
                                 filename: "".concat(options.session, ".zip")
@@ -196,6 +223,9 @@ var MongoStore = /** @class */ (function () {
                                 return [2 /*return*/, bucket_2.delete(doc._id)];
                             });
                         }); });
+                        if (this.debug) {
+                            console.log('Session deleted from MongoDB');
+                        }
                         _a.label = 3;
                     case 3: return [2 /*return*/];
                 }
