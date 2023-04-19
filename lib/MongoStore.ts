@@ -137,9 +137,9 @@ export class MongoStore {
 
             const newDocument = documents.reduce((a: any, b: any) => a.uploadDate > b.uploadDate ? a : b);
 
-            const corrupted = await this.checkValidZip({ session: options.session, documentId: newDocument._id });
+            const valid = await this.checkValidZip({ session: options.session, documentId: newDocument._id });
 
-            if (corrupted == false) {
+            if (valid == false) {
                 console.log('File is corrupted, deleting...');
 
                 return bucket.delete(newDocument._id);
