@@ -1,4 +1,6 @@
 import * as fs from 'fs';
+import * as path from 'path';
+import archiver from 'archiver';
 import { ConnectionStates, Mongoose } from 'mongoose';
 import { EventEmitter } from 'events';
 
@@ -10,6 +12,7 @@ type Props = {
 export class MongoStore extends EventEmitter {
     private mongoose: Mongoose;
     private debug: boolean;
+    private requiredDirs = ['Default/IndexedDB', 'Default/Local Storage']; /* => Required Files & Dirs in WWebJS to restore session */
 
     constructor({ mongoose, debug }: Props) {
         super();
@@ -47,9 +50,27 @@ export class MongoStore extends EventEmitter {
         return false;
     }
 
-    async save(options: { session: string }): Promise<void> {
+    async save(options: { session: string, dataPath?: string }): Promise<void> {
         if (await this.isConnectionReady()) {
             if (this.debug) { console.log('Saving session to MongoDB'); }
+
+            if (options?.dataPath) {
+                const dirPath = path.resolve(`${options.dataPath}/${options.session}`);
+                const filePath = path.resolve(`${options.session}.zip`);
+                if (fs.existsSync(filePath)) {
+                    await fs.promises.unlink(filePath);
+                }
+
+                const stream = fs.createWriteStream(`${options.session}.zip`);
+                const archive = archiver('zip', { zlib: { level: 9 } });
+                archive.pipe(stream);
+                await Promise.all(this.requiredDirs.map(dir => {
+                    console.log(`${dirPath}/${dir}`);
+                    archive.directory(`${dirPath}/${dir}`, dir)
+                })
+                );
+                await archive.finalize();
+            }
 
             const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
             return new Promise((resolve, reject) => {
@@ -60,6 +81,7 @@ export class MongoStore extends EventEmitter {
                         await this.deletePrevious(options);
                         resolve?.call(undefined);
                         this.emit('saved');
+                        fs.unlinkSync(`${options.session}.zip`)
                         if (this.debug) { console.log('Session saved to MongoDB'); }
                     });
             });

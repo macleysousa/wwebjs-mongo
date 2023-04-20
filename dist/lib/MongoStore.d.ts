@@ -8,6 +8,7 @@ type Props = {
 export declare class MongoStore extends EventEmitter {
     private mongoose;
     private debug;
+    private requiredDirs;
     constructor({ mongoose, debug }: Props);
     isConnectionReady(): Promise<boolean>;
     sessionExists(options: {
@@ -15,6 +16,7 @@ export declare class MongoStore extends EventEmitter {
     }): Promise<boolean>;
     save(options: {
         session: string;
+        dataPath?: string;
     }): Promise<void>;
     extract(options: {
         session: string;

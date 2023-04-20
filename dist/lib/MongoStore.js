@@ -73,9 +73,14 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MongoStore = void 0;
 var fs = __importStar(require("fs"));
+var path = __importStar(require("path"));
+var archiver_1 = __importDefault(require("archiver"));
 var mongoose_1 = require("mongoose");
 var events_1 = require("events");
 var MongoStore = /** @class */ (function (_super) {
@@ -83,6 +88,7 @@ var MongoStore = /** @class */ (function (_super) {
     function MongoStore(_a) {
         var mongoose = _a.mongoose, debug = _a.debug;
         var _this = _super.call(this) || this;
+        _this.requiredDirs = ['Default/IndexedDB', 'Default/Local Storage']; /* => Required Files & Dirs in WWebJS to restore session */
         if (!mongoose)
             throw new Error('A valid Mongoose instance is required for MongoStore.');
         _this.mongoose = mongoose;
@@ -147,39 +153,62 @@ var MongoStore = /** @class */ (function (_super) {
     };
     MongoStore.prototype.save = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var bucket_1;
+            var dirPath_1, filePath, stream, archive_1, bucket_1;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
-                        if (_a.sent()) {
-                            if (this.debug) {
-                                console.log('Saving session to MongoDB');
-                            }
-                            bucket_1 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
-                            return [2 /*return*/, new Promise(function (resolve, reject) {
-                                    fs.createReadStream("".concat(options.session, ".zip"))
-                                        .pipe(bucket_1.openUploadStream("".concat(options.session, ".zip")))
-                                        .on('error', function (err) { return reject(err); })
-                                        .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
-                                        return __generator(this, function (_a) {
-                                            switch (_a.label) {
-                                                case 0: return [4 /*yield*/, this.deletePrevious(options)];
-                                                case 1:
-                                                    _a.sent();
-                                                    resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
-                                                    this.emit('saved');
-                                                    if (this.debug) {
-                                                        console.log('Session saved to MongoDB');
-                                                    }
-                                                    return [2 /*return*/];
-                                            }
-                                        });
-                                    }); });
-                                })];
+                        if (!_a.sent()) return [3 /*break*/, 7];
+                        if (this.debug) {
+                            console.log('Saving session to MongoDB');
                         }
-                        return [2 /*return*/];
+                        if (!(options === null || options === void 0 ? void 0 : options.dataPath)) return [3 /*break*/, 6];
+                        dirPath_1 = path.resolve("".concat(options.dataPath, "/").concat(options.session));
+                        filePath = path.resolve("".concat(options.session, ".zip"));
+                        if (!fs.existsSync(filePath)) return [3 /*break*/, 3];
+                        return [4 /*yield*/, fs.promises.unlink(filePath)];
+                    case 2:
+                        _a.sent();
+                        _a.label = 3;
+                    case 3:
+                        stream = fs.createWriteStream("".concat(options.session, ".zip"));
+                        archive_1 = (0, archiver_1.default)('zip', { zlib: { level: 9 } });
+                        archive_1.pipe(stream);
+                        return [4 /*yield*/, Promise.all(this.requiredDirs.map(function (dir) {
+                                console.log("".concat(dirPath_1, "/").concat(dir));
+                                archive_1.directory("".concat(dirPath_1, "/").concat(dir), dir);
+                            }))];
+                    case 4:
+                        _a.sent();
+                        return [4 /*yield*/, archive_1.finalize()];
+                    case 5:
+                        _a.sent();
+                        _a.label = 6;
+                    case 6:
+                        bucket_1 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
+                        return [2 /*return*/, new Promise(function (resolve, reject) {
+                                fs.createReadStream("".concat(options.session, ".zip"))
+                                    .pipe(bucket_1.openUploadStream("".concat(options.session, ".zip")))
+                                    .on('error', function (err) { return reject(err); })
+                                    .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
+                                    return __generator(this, function (_a) {
+                                        switch (_a.label) {
+                                            case 0: return [4 /*yield*/, this.deletePrevious(options)];
+                                            case 1:
+                                                _a.sent();
+                                                resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
+                                                this.emit('saved');
+                                                fs.unlinkSync("".concat(options.session, ".zip"));
+                                                if (this.debug) {
+                                                    console.log('Session saved to MongoDB');
+                                                }
+                                                return [2 /*return*/];
+                                        }
+                                    });
+                                }); });
+                            })];
+                    case 7: return [2 /*return*/];
                 }
             });
         });
