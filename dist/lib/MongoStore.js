@@ -78,7 +78,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MongoStore = void 0;
-var fs = __importStar(require("fs"));
+var fs_extra_1 = __importDefault(require("fs-extra"));
 var path = __importStar(require("path"));
 var archiver_1 = __importDefault(require("archiver"));
 var mongoose_1 = require("mongoose");
@@ -153,43 +153,66 @@ var MongoStore = /** @class */ (function (_super) {
     };
     MongoStore.prototype.save = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var dirPath_1, filePath, stream, archive_1, bucket_1;
+            var dirPath, filePath, stream, archive_1, tempDir_1, bucket_1;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
-                        if (!_a.sent()) return [3 /*break*/, 7];
-                        if (this.debug) {
-                            console.log('Saving session to MongoDB');
-                        }
-                        if (!(options === null || options === void 0 ? void 0 : options.dataPath)) return [3 /*break*/, 6];
-                        dirPath_1 = path.resolve("".concat(options.dataPath, "/").concat(options.session));
+                        if (!_a.sent()) return [3 /*break*/, 12];
+                        if (!(options === null || options === void 0 ? void 0 : options.dataPath)) return [3 /*break*/, 11];
+                        dirPath = path.resolve("".concat(options.dataPath, "/").concat(options.session));
                         filePath = path.resolve("".concat(options.session, ".zip"));
-                        if (!fs.existsSync(filePath)) return [3 /*break*/, 3];
-                        return [4 /*yield*/, fs.promises.unlink(filePath)];
+                        if (!fs_extra_1.default.existsSync(filePath)) return [3 /*break*/, 3];
+                        return [4 /*yield*/, fs_extra_1.default.promises.unlink(filePath)];
                     case 2:
                         _a.sent();
                         _a.label = 3;
                     case 3:
-                        stream = fs.createWriteStream("".concat(options.session, ".zip"));
+                        stream = fs_extra_1.default.createWriteStream("".concat(options.session, ".zip"));
                         archive_1 = (0, archiver_1.default)('zip', { zlib: { level: 9 } });
-                        archive_1.pipe(stream);
-                        return [4 /*yield*/, Promise.all(this.requiredDirs.map(function (dir) {
-                                console.log("".concat(dirPath_1, "/").concat(dir));
-                                archive_1.directory("".concat(dirPath_1, "/").concat(dir), dir);
-                            }))];
+                        tempDir_1 = path.resolve("".concat(options.dataPath, "/temp-").concat(options.session));
+                        if (!fs_extra_1.default.existsSync("".concat(tempDir_1))) return [3 /*break*/, 5];
+                        return [4 /*yield*/, fs_extra_1.default.promises.rmdir("".concat(tempDir_1), { recursive: true })];
                     case 4:
                         _a.sent();
+                        _a.label = 5;
+                    case 5: return [4 /*yield*/, fs_extra_1.default.mkdir("".concat(tempDir_1))];
+                    case 6:
+                        _a.sent();
+                        if (this.debug) {
+                            console.log('Copying session files to temp directory');
+                        }
+                        return [4 /*yield*/, fs_extra_1.default.copy("".concat(dirPath), tempDir_1)];
+                    case 7:
+                        _a.sent();
+                        if (this.debug) {
+                            console.log('Copying session files to temp directory - Done');
+                        }
+                        archive_1.pipe(stream);
+                        return [4 /*yield*/, Promise.all(this.requiredDirs.map(function (dir) {
+                                if (_this.debug) {
+                                    console.log("".concat(tempDir_1, "/").concat(dir), dir);
+                                }
+                                archive_1.directory("".concat(tempDir_1, "/").concat(dir), dir);
+                            }))];
+                    case 8:
+                        _a.sent();
                         return [4 /*yield*/, archive_1.finalize()];
-                    case 5:
+                    case 9:
                         _a.sent();
                         stream.close();
-                        _a.label = 6;
-                    case 6:
+                        return [4 /*yield*/, fs_extra_1.default.promises.rmdir("".concat(tempDir_1), { recursive: true })];
+                    case 10:
+                        _a.sent();
+                        _a.label = 11;
+                    case 11:
+                        if (this.debug) {
+                            console.log('Saving session to MongoDB');
+                        }
                         bucket_1 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                         return [2 /*return*/, new Promise(function (resolve, reject) {
-                                fs.createReadStream("".concat(options.session, ".zip"))
+                                fs_extra_1.default.createReadStream("".concat(options.session, ".zip"))
                                     .pipe(bucket_1.openUploadStream("".concat(options.session, ".zip")))
                                     .on('error', function (err) { return reject(err); })
                                     .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
@@ -199,6 +222,8 @@ var MongoStore = /** @class */ (function (_super) {
                                             case 1:
                                                 _a.sent();
                                                 resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
+                                                // const filePath = path.resolve(`${options.session}.zip`);
+                                                // if (fs.existsSync(filePath)) { fs.rmSync(filePath, { recursive: true }) };
                                                 this.emit('saved');
                                                 if (this.debug) {
                                                     console.log('Session saved to MongoDB');
@@ -208,7 +233,7 @@ var MongoStore = /** @class */ (function (_super) {
                                     });
                                 }); });
                             })];
-                    case 7: return [2 /*return*/];
+                    case 12: return [2 /*return*/];
                 }
             });
         });
@@ -231,7 +256,7 @@ var MongoStore = /** @class */ (function (_super) {
                             return [2 /*return*/, new Promise(function (resolve, reject) {
                                     var _a;
                                     bucket.openDownloadStreamByName("".concat(options.session, ".zip"))
-                                        .pipe(fs.createWriteStream((_a = options.path) !== null && _a !== void 0 ? _a : "".concat(options.session, ".zip")))
+                                        .pipe(fs_extra_1.default.createWriteStream((_a = options.path) !== null && _a !== void 0 ? _a : "".concat(options.session, ".zip")))
                                         .on('error', function (err) { return reject(err); })
                                         .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
                                         return __generator(this, function (_a) {

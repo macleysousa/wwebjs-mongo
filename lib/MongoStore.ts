@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import fs from 'fs-extra';
 import * as path from 'path';
 import archiver from 'archiver';
 import { ConnectionStates, Mongoose } from 'mongoose';
@@ -52,8 +52,6 @@ export class MongoStore extends EventEmitter {
 
     async save(options: { session: string, dataPath?: string }): Promise<void> {
         if (await this.isConnectionReady()) {
-            if (this.debug) { console.log('Saving session to MongoDB'); }
-
             if (options?.dataPath) {
                 const dirPath = path.resolve(`${options.dataPath}/${options.session}`);
                 const filePath = path.resolve(`${options.session}.zip`);
@@ -63,16 +61,33 @@ export class MongoStore extends EventEmitter {
 
                 const stream = fs.createWriteStream(`${options.session}.zip`);
                 const archive = archiver('zip', { zlib: { level: 9 } });
+
+                const tempDir = path.resolve(`${options.dataPath}/temp-${options.session}`);
+                if (fs.existsSync(`${tempDir}`)) {
+                    await fs.promises.rmdir(`${tempDir}`, { recursive: true });
+                }
+
+                await fs.mkdir(`${tempDir}`);
+
+                if (this.debug) { console.log('Copying session files to temp directory'); }
+
+                await fs.copy(`${dirPath}`, tempDir);
+
+                if (this.debug) { console.log('Copying session files to temp directory - Done'); }
+
                 archive.pipe(stream);
                 await Promise.all(this.requiredDirs.map(dir => {
-                    console.log(`${dirPath}/${dir}`);
-                    archive.directory(`${dirPath}/${dir}`, dir)
-                })
-                );
+                    if (this.debug) { console.log(`${tempDir}/${dir}`, dir); }
+                    archive.directory(`${tempDir}/${dir}`, dir);
+                }));
+
                 await archive.finalize();
                 stream.close();
+
+                await fs.promises.rmdir(`${tempDir}`, { recursive: true });
             }
 
+            if (this.debug) { console.log('Saving session to MongoDB'); }
             const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
             return new Promise((resolve, reject) => {
                 fs.createReadStream(`${options.session}.zip`)
@@ -81,6 +96,10 @@ export class MongoStore extends EventEmitter {
                     .on('close', async () => {
                         await this.deletePrevious(options);
                         resolve?.call(undefined);
+
+                        // const filePath = path.resolve(`${options.session}.zip`);
+                        // if (fs.existsSync(filePath)) { fs.rmSync(filePath, { recursive: true }) };
+
                         this.emit('saved');
                         if (this.debug) { console.log('Session saved to MongoDB'); }
                     });
