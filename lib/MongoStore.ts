@@ -83,7 +83,7 @@ export class MongoStore extends EventEmitter {
                         resolve?.call(undefined);
                         this.emit('saved');
                         const filePath = path.resolve(`${options.session}.zip`);
-                        if (filePath) {
+                        if (fs.existsSync(filePath)) {
                             await fs.promises.rm(`${options.session}.zip`, { recursive: true })
                         }
                         if (this.debug) { console.log('Session saved to MongoDB'); }
