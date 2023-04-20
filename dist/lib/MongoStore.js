@@ -184,6 +184,7 @@ var MongoStore = /** @class */ (function (_super) {
                         return [4 /*yield*/, archive_1.finalize()];
                     case 5:
                         _a.sent();
+                        stream.close();
                         _a.label = 6;
                     case 6:
                         bucket_1 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
@@ -192,6 +193,7 @@ var MongoStore = /** @class */ (function (_super) {
                                     .pipe(bucket_1.openUploadStream("".concat(options.session, ".zip")))
                                     .on('error', function (err) { return reject(err); })
                                     .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
+                                    var filePath;
                                     return __generator(this, function (_a) {
                                         switch (_a.label) {
                                             case 0: return [4 /*yield*/, this.deletePrevious(options)];
@@ -199,7 +201,10 @@ var MongoStore = /** @class */ (function (_super) {
                                                 _a.sent();
                                                 resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
                                                 this.emit('saved');
-                                                fs.unlinkSync("".concat(options.session, ".zip"));
+                                                filePath = path.resolve("".concat(options.session, ".zip"));
+                                                if (fs.existsSync(filePath)) {
+                                                    setTimeout(function () { return fs.promises.rm("".concat(options.session, ".zip"), { recursive: true }); }, 1000 * 2);
+                                                }
                                                 if (this.debug) {
                                                     console.log('Session saved to MongoDB');
                                                 }
