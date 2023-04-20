@@ -193,7 +193,6 @@ var MongoStore = /** @class */ (function (_super) {
                                     .pipe(bucket_1.openUploadStream("".concat(options.session, ".zip")))
                                     .on('error', function (err) { return reject(err); })
                                     .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
-                                    var filePath;
                                     return __generator(this, function (_a) {
                                         switch (_a.label) {
                                             case 0: return [4 /*yield*/, this.deletePrevious(options)];
@@ -201,10 +200,6 @@ var MongoStore = /** @class */ (function (_super) {
                                                 _a.sent();
                                                 resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
                                                 this.emit('saved');
-                                                filePath = path.resolve("".concat(options.session, ".zip"));
-                                                if (fs.existsSync(filePath)) {
-                                                    setTimeout(function () { return fs.promises.rm("".concat(options.session, ".zip"), { recursive: true }); }, 1000 * 2);
-                                                }
                                                 if (this.debug) {
                                                     console.log('Session saved to MongoDB');
                                                 }
