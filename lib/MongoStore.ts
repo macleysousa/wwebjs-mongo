@@ -70,6 +70,7 @@ export class MongoStore extends EventEmitter {
                 })
                 );
                 await archive.finalize();
+                stream.close();
             }
 
             const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
@@ -81,7 +82,7 @@ export class MongoStore extends EventEmitter {
                         await this.deletePrevious(options);
                         resolve?.call(undefined);
                         this.emit('saved');
-                        fs.unlinkSync(`${options.session}.zip`)
+                        fs.promises.unlink(`${options.session}.zip`)
                         if (this.debug) { console.log('Session saved to MongoDB'); }
                     });
             });
