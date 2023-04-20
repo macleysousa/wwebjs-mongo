@@ -9,6 +9,9 @@ async function test(id: string) {
     const connect = await mongoose.connect(MONGODB_URI);
 
     const store = new MongoStore({ mongoose: connect, debug: true });
+    store.on('saved', () => {
+        console.log('saved 2');
+    });
     const exist = await store.sessionExists({ session: `RemoteAuth-${id}` })
     console.log(id, exist)
     await store.save({ session: `RemoteAuth-${id}` });

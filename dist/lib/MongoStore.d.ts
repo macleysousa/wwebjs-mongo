@@ -1,9 +1,11 @@
+/// <reference types="node" />
 import { Mongoose } from 'mongoose';
+import { EventEmitter } from 'events';
 type Props = {
     mongoose: Mongoose;
     debug?: boolean;
 };
-export declare class MongoStore {
+export declare class MongoStore extends EventEmitter {
     private mongoose;
     private debug;
     constructor({ mongoose, debug }: Props);
@@ -21,8 +23,8 @@ export declare class MongoStore {
     delete(options: {
         session: string;
     }): Promise<void>;
-    private checkValidZip;
     private deletePrevious;
     private deley;
+    on(eventName: 'saved' | 'deleted' | 'extracted', listener: (...args: any[]) => void): this;
 }
 export {};

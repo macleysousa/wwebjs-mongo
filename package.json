@@ -12,7 +12,6 @@
     "lib": "lib"
   },
   "dependencies": {
-    "adm-zip": "^0.5.10",
     "mongoose": "^7.0.3"
   },
   "devDependencies": {

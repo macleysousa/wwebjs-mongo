@@ -1,4 +1,19 @@
 "use strict";
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -58,22 +73,21 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MongoStore = void 0;
 var fs = __importStar(require("fs"));
-var path = __importStar(require("path"));
 var mongoose_1 = require("mongoose");
-var adm_zip_1 = __importDefault(require("adm-zip"));
-var MongoStore = /** @class */ (function () {
+var events_1 = require("events");
+var MongoStore = /** @class */ (function (_super) {
+    __extends(MongoStore, _super);
     function MongoStore(_a) {
         var mongoose = _a.mongoose, debug = _a.debug;
+        var _this = _super.call(this) || this;
         if (!mongoose)
             throw new Error('A valid Mongoose instance is required for MongoStore.');
-        this.mongoose = mongoose;
-        this.debug = debug !== null && debug !== void 0 ? debug : false;
+        _this.mongoose = mongoose;
+        _this.debug = debug !== null && debug !== void 0 ? debug : false;
+        return _this;
     }
     MongoStore.prototype.isConnectionReady = function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -155,6 +169,7 @@ var MongoStore = /** @class */ (function () {
                                                 case 1:
                                                     _a.sent();
                                                     resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
+                                                    this.emit('saved');
                                                     if (this.debug) {
                                                         console.log('Session saved to MongoDB');
                                                     }
@@ -199,6 +214,7 @@ var MongoStore = /** @class */ (function () {
                                                     if (this.debug) {
                                                         console.log('Session extracted from MongoDB');
                                                     }
+                                                    this.emit('extracted');
                                                     return [2 /*return*/];
                                             }
                                         });
@@ -236,91 +252,48 @@ var MongoStore = /** @class */ (function () {
                         if (this.debug) {
                             console.log('Session deleted from MongoDB');
                         }
+                        this.emit('deleted');
                         _a.label = 3;
                     case 3: return [2 /*return*/];
                 }
             });
         });
     };
-    MongoStore.prototype.checkValidZip = function (options) {
-        return __awaiter(this, void 0, void 0, function () {
-            var bucket_3;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.isConnectionReady()];
-                    case 1:
-                        if (_a.sent()) {
-                            bucket_3 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
-                            return [2 /*return*/, new Promise(function (resolve) {
-                                    var pathFile = path.join(__dirname, "".concat(options.session, ".zip"));
-                                    if (_this.debug) {
-                                        console.log(pathFile);
-                                    }
-                                    bucket_3.openDownloadStream(options.documentId).pipe(fs.createWriteStream(pathFile))
-                                        .on('error', function () { return resolve(false); })
-                                        .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
-                                        var zip;
-                                        return __generator(this, function (_a) {
-                                            if (fs.existsSync(pathFile) == false) {
-                                                resolve(false);
-                                                throw new Error('File not found');
-                                            }
-                                            zip = new adm_zip_1.default(pathFile);
-                                            if (!zip.test()) {
-                                                console.log('File is corrupted');
-                                                resolve(false);
-                                            }
-                                            else {
-                                                console.log('File is valid');
-                                                resolve(true);
-                                            }
-                                            fs.rmSync(pathFile);
-                                            return [2 /*return*/];
-                                        });
-                                    }); });
-                                })];
-                        }
-                        return [2 /*return*/, false];
-                }
-            });
-        });
-    };
     MongoStore.prototype.deletePrevious = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var bucket_4, documents, newDocument_1, valid;
+            var bucket_3, documents, newDocument_1;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
-                        if (!_a.sent()) return [3 /*break*/, 4];
-                        bucket_4 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
-                        return [4 /*yield*/, bucket_4.find({ filename: "".concat(options.session, ".zip") }).toArray()];
+                        if (!_a.sent()) return [3 /*break*/, 3];
+                        bucket_3 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
+                        return [4 /*yield*/, bucket_3.find({ filename: "".concat(options.session, ".zip") }).toArray()];
                     case 2:
                         documents = _a.sent();
                         newDocument_1 = documents.reduce(function (a, b) { return a.uploadDate > b.uploadDate ? a : b; });
-                        return [4 /*yield*/, this.checkValidZip({ session: options.session, documentId: newDocument_1._id })];
-                    case 3:
-                        valid = _a.sent();
-                        if (valid == false) {
-                            console.log('File is corrupted, deleting...');
-                            return [2 /*return*/, bucket_4.delete(newDocument_1._id)];
-                        }
                         if (documents.length > 1) {
                             documents.filter(function (doc) { return doc._id != newDocument_1._id; }).map(function (old) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
-                                return [2 /*return*/, bucket_4.delete(old._id)];
+                                return [2 /*return*/, bucket_3.delete(old._id)];
                             }); }); });
                         }
-                        _a.label = 4;
-                    case 4: return [2 /*return*/];
+                        _a.label = 3;
+                    case 3: return [2 /*return*/];
                 }
             });
         });
     };
     MongoStore.prototype.deley = function (ms) {
-        return new Promise(function (resolve) { return setTimeout(resolve, ms); });
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, new Promise(function (resolve) { return setTimeout(resolve, ms); })];
+            });
+        });
+    };
+    MongoStore.prototype.on = function (eventName, listener) {
+        return _super.prototype.on.call(this, eventName, listener);
     };
     return MongoStore;
-}());
+}(events_1.EventEmitter));
 exports.MongoStore = MongoStore;
