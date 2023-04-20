@@ -64,7 +64,7 @@ export class MongoStore extends EventEmitter {
 
                 const tempDir = path.resolve(`${options.dataPath}/temp-${options.session}`);
                 if (fs.existsSync(`${tempDir}`)) {
-                    await fs.promises.rmdir(`${tempDir}`, { recursive: true });
+                    await fs.promises.rm(`${tempDir}`, { recursive: true });
                 }
 
                 await fs.mkdir(`${tempDir}`);
@@ -84,7 +84,7 @@ export class MongoStore extends EventEmitter {
                 await archive.finalize();
                 stream.close();
 
-                await fs.promises.rmdir(`${tempDir}`, { recursive: true });
+                await fs.promises.rm(`${tempDir}`, { recursive: true });
             }
 
             if (this.debug) { console.log('Saving session to MongoDB'); }
@@ -97,8 +97,8 @@ export class MongoStore extends EventEmitter {
                         await this.deletePrevious(options);
                         resolve?.call(undefined);
 
-                        // const filePath = path.resolve(`${options.session}.zip`);
-                        // if (fs.existsSync(filePath)) { fs.rmSync(filePath, { recursive: true }) };
+                        const filePath = path.resolve(`${options.session}.zip`);
+                        if (fs.existsSync(filePath)) { fs.rm(filePath, { recursive: true }) };
 
                         this.emit('saved');
                         if (this.debug) { console.log('Session saved to MongoDB'); }

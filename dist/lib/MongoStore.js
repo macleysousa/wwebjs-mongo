@@ -173,7 +173,7 @@ var MongoStore = /** @class */ (function (_super) {
                         archive_1 = (0, archiver_1.default)('zip', { zlib: { level: 9 } });
                         tempDir_1 = path.resolve("".concat(options.dataPath, "/temp-").concat(options.session));
                         if (!fs_extra_1.default.existsSync("".concat(tempDir_1))) return [3 /*break*/, 5];
-                        return [4 /*yield*/, fs_extra_1.default.promises.rmdir("".concat(tempDir_1), { recursive: true })];
+                        return [4 /*yield*/, fs_extra_1.default.promises.rm("".concat(tempDir_1), { recursive: true })];
                     case 4:
                         _a.sent();
                         _a.label = 5;
@@ -202,7 +202,7 @@ var MongoStore = /** @class */ (function (_super) {
                     case 9:
                         _a.sent();
                         stream.close();
-                        return [4 /*yield*/, fs_extra_1.default.promises.rmdir("".concat(tempDir_1), { recursive: true })];
+                        return [4 /*yield*/, fs_extra_1.default.promises.rm("".concat(tempDir_1), { recursive: true })];
                     case 10:
                         _a.sent();
                         _a.label = 11;
@@ -216,14 +216,18 @@ var MongoStore = /** @class */ (function (_super) {
                                     .pipe(bucket_1.openUploadStream("".concat(options.session, ".zip")))
                                     .on('error', function (err) { return reject(err); })
                                     .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
+                                    var filePath;
                                     return __generator(this, function (_a) {
                                         switch (_a.label) {
                                             case 0: return [4 /*yield*/, this.deletePrevious(options)];
                                             case 1:
                                                 _a.sent();
                                                 resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
-                                                // const filePath = path.resolve(`${options.session}.zip`);
-                                                // if (fs.existsSync(filePath)) { fs.rmSync(filePath, { recursive: true }) };
+                                                filePath = path.resolve("".concat(options.session, ".zip"));
+                                                if (fs_extra_1.default.existsSync(filePath)) {
+                                                    fs_extra_1.default.rm(filePath, { recursive: true });
+                                                }
+                                                ;
                                                 this.emit('saved');
                                                 if (this.debug) {
                                                     console.log('Session saved to MongoDB');
