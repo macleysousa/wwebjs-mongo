@@ -81,6 +81,7 @@ exports.MongoStore = void 0;
 var fs_extra_1 = __importDefault(require("fs-extra"));
 var path = __importStar(require("path"));
 var archiver_1 = __importDefault(require("archiver"));
+var adm_zip_1 = __importDefault(require("adm-zip"));
 var mongoose_1 = require("mongoose");
 var events_1 = require("events");
 var MongoStore = /** @class */ (function (_super) {
@@ -317,27 +318,97 @@ var MongoStore = /** @class */ (function (_super) {
             });
         });
     };
-    MongoStore.prototype.deletePrevious = function (options) {
+    MongoStore.prototype.validate = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var bucket_3, documents, newDocument_1;
+            var bucket_3, filePath_1;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
-                        if (!_a.sent()) return [3 /*break*/, 3];
-                        bucket_3 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
-                        return [4 /*yield*/, bucket_3.find({ filename: "".concat(options.session, ".zip") }).toArray()];
+                        if (_a.sent()) {
+                            if (this.debug) {
+                                console.log('Validating session in MongoDB');
+                            }
+                            bucket_3 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
+                            filePath_1 = path.resolve("./".concat(options.documentId, ".zip"));
+                            return [2 /*return*/, new Promise(function (resolve) {
+                                    bucket_3.openDownloadStream(options.documentId)
+                                        .pipe(fs_extra_1.default.createWriteStream(filePath_1))
+                                        .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
+                                        var zip, err_1;
+                                        return __generator(this, function (_a) {
+                                            switch (_a.label) {
+                                                case 0:
+                                                    _a.trys.push([0, 1, 2, 4]);
+                                                    zip = new adm_zip_1.default(filePath_1);
+                                                    if (zip.test()) {
+                                                        resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined, true);
+                                                        if (this.debug) {
+                                                            console.log('Session validated in MongoDB');
+                                                        }
+                                                    }
+                                                    else {
+                                                        resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined, false);
+                                                        if (this.debug) {
+                                                            console.log('Session validation failed in MongoDB');
+                                                        }
+                                                    }
+                                                    return [3 /*break*/, 4];
+                                                case 1:
+                                                    err_1 = _a.sent();
+                                                    resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined, false);
+                                                    if (this.debug) {
+                                                        console.log('Session validation failed in MongoDB');
+                                                    }
+                                                    return [3 /*break*/, 4];
+                                                case 2: return [4 /*yield*/, fs_extra_1.default.promises.rm(filePath_1, { recursive: true })];
+                                                case 3:
+                                                    _a.sent();
+                                                    return [7 /*endfinally*/];
+                                                case 4: return [2 /*return*/];
+                                            }
+                                        });
+                                    }); });
+                                })];
+                        }
+                        return [2 /*return*/, false];
+                }
+            });
+        });
+    };
+    MongoStore.prototype.deletePrevious = function (options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var bucket_4, documents, newDocument_1, isValid;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.isConnectionReady()];
+                    case 1:
+                        if (!_a.sent()) return [3 /*break*/, 6];
+                        bucket_4 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
+                        return [4 /*yield*/, bucket_4.find({ filename: "".concat(options.session, ".zip") }).toArray()];
                     case 2:
                         documents = _a.sent();
                         newDocument_1 = documents.reduce(function (a, b) { return a.uploadDate > b.uploadDate ? a : b; });
+                        return [4 /*yield*/, this.validate({ session: options.session, documentId: newDocument_1._id })];
+                    case 3:
+                        isValid = _a.sent();
+                        if (!(documents.length > 1 && isValid == false)) return [3 /*break*/, 5];
+                        return [4 /*yield*/, bucket_4.delete(newDocument_1._id)];
+                    case 4:
+                        _a.sent();
+                        if (this.debug)
+                            console.log('File is corrupted, deleted from MongoDB');
+                        return [2 /*return*/];
+                    case 5:
                         if (documents.length > 1) {
                             documents.filter(function (doc) { return doc._id != newDocument_1._id; }).map(function (old) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
-                                return [2 /*return*/, bucket_3.delete(old._id)];
+                                return [2 /*return*/, bucket_4.delete(old._id)];
                             }); }); });
                         }
-                        _a.label = 3;
-                    case 3: return [2 /*return*/];
+                        _a.label = 6;
+                    case 6: return [2 /*return*/];
                 }
             });
         });

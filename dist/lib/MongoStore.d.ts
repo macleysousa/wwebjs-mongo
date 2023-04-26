@@ -25,6 +25,7 @@ export declare class MongoStore extends EventEmitter {
     delete(options: {
         session: string;
     }): Promise<void>;
+    private validate;
     private deletePrevious;
     private deley;
     on(eventName: 'saved' | 'deleted' | 'extracted', listener: (...args: any[]) => void): this;

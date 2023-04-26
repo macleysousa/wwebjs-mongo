@@ -1,7 +1,9 @@
 import fs from 'fs-extra';
 import * as path from 'path';
 import archiver from 'archiver';
+import AdmZip from 'adm-zip';
 import { ConnectionStates, Mongoose } from 'mongoose';
+import { ObjectId } from 'mongodb';
 import { EventEmitter } from 'events';
 
 type Props = {
@@ -146,12 +148,51 @@ export class MongoStore extends EventEmitter {
         }
     }
 
+    private async validate(options: { session: string, documentId: ObjectId }) {
+        if (await this.isConnectionReady()) {
+            if (this.debug) { console.log('Validating session in MongoDB'); }
+            const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
+            const filePath = path.resolve(`./${options.documentId}.zip`);
+            return new Promise((resolve) => {
+                bucket.openDownloadStream(options.documentId)
+                    .pipe(fs.createWriteStream(filePath))
+                    .on('close', async () => {
+                        try {
+                            const zip = new AdmZip(filePath);
+                            if (zip.test()) {
+                                resolve?.call(undefined, true);
+                                if (this.debug) { console.log('Session validated in MongoDB'); }
+                            } else {
+                                resolve?.call(undefined, false);
+                                if (this.debug) { console.log('Session validation failed in MongoDB'); }
+                            }
+                        }
+                        catch (err) {
+                            resolve?.call(undefined, false);
+                            if (this.debug) { console.log('Session validation failed in MongoDB'); }
+                        }
+                        finally {
+                            await fs.promises.rm(filePath, { recursive: true });
+                        }
+                    });
+            });
+        }
+        return false;
+    }
+
     private async deletePrevious(options: { session: string }) {
         if (await this.isConnectionReady()) {
             const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
             const documents = await bucket.find({ filename: `${options.session}.zip` }).toArray();
 
             const newDocument = documents.reduce((a: any, b: any) => a.uploadDate > b.uploadDate ? a : b);
+
+            const isValid = await this.validate({ session: options.session, documentId: newDocument._id });
+            if (documents.length > 1 && isValid == false) {
+                await bucket.delete(newDocument._id);
+                if (this.debug) console.log('File is corrupted, deleted from MongoDB');
+                return;
+            }
 
             if (documents.length > 1) {
                 documents.filter((doc: any) => doc._id != newDocument._id).map(async (old) => bucket.delete(old._id))

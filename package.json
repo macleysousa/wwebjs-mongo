@@ -12,12 +12,13 @@
     "lib": "lib"
   },
   "dependencies": {
+    "adm-zip": "^0.5.10",
     "archiver": "^5.3.1",
     "fs-extra": "^10.1.0",
-    "mongoose": "^7.0.3",
-    "unzipper": "^0.10.11"
+    "mongoose": "^7.0.3"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.0",
     "@types/archiver": "^5.3.2",
     "@types/fs-extra": "^11.0.1",
     "dotenv": "^16.0.3",
