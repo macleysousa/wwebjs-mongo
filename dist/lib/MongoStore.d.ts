@@ -4,12 +4,14 @@ import { EventEmitter } from 'events';
 type Props = {
     mongoose: Mongoose;
     debug?: boolean;
+    deleteFileTemp?: boolean;
 };
 export declare class MongoStore extends EventEmitter {
     private mongoose;
     private debug;
     private requiredDirs;
-    constructor({ mongoose, debug }: Props);
+    private deleteFileTemp;
+    constructor({ mongoose, debug, deleteFileTemp }: Props);
     isConnectionReady(): Promise<boolean>;
     sessionExists(options: {
         session: string;

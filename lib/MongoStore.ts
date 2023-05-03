@@ -9,18 +9,21 @@ import { EventEmitter } from 'events';
 type Props = {
     mongoose: Mongoose;
     debug?: boolean;
+    deleteFileTemp?: boolean;
 };
 
 export class MongoStore extends EventEmitter {
     private mongoose: Mongoose;
     private debug: boolean;
     private requiredDirs = ['Default/IndexedDB', 'Default/Local Storage']; /* => Required Files & Dirs in WWebJS to restore session */
+    private deleteFileTemp = false;
 
-    constructor({ mongoose, debug }: Props) {
+    constructor({ mongoose, debug, deleteFileTemp }: Props) {
         super();
         if (!mongoose) throw new Error('A valid Mongoose instance is required for MongoStore.');
         this.mongoose = mongoose;
         this.debug = debug ?? false;
+        this.deleteFileTemp = deleteFileTemp ?? true;
     }
 
     async isConnectionReady(): Promise<boolean> {
@@ -86,7 +89,8 @@ export class MongoStore extends EventEmitter {
                 await archive.finalize();
                 stream.close();
 
-                await fs.promises.rm(`${tempDir}`, { recursive: true });
+                if (this.deleteFileTemp)
+                    await fs.promises.rm(`${tempDir}`, { recursive: true });
             }
 
             if (this.debug) { console.log('Saving session to MongoDB'); }
@@ -193,8 +197,12 @@ export class MongoStore extends EventEmitter {
 
             const isValid = await this.validate({ session: options.session, documentId: newDocument._id });
             if (documents.length > 1 && isValid == false) {
-                await bucket.delete(newDocument._id);
-                if (this.debug) console.log('File is corrupted, deleted from MongoDB');
+
+                if (this.deleteFileTemp)
+                    await bucket.delete(newDocument._id);
+                if (this.debug)
+                    console.log('File is corrupted, deleted from MongoDB');
+
                 throw new Error('File is corrupted, deleted from MongoDB');
             }
 

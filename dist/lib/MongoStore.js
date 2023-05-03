@@ -87,13 +87,15 @@ var events_1 = require("events");
 var MongoStore = /** @class */ (function (_super) {
     __extends(MongoStore, _super);
     function MongoStore(_a) {
-        var mongoose = _a.mongoose, debug = _a.debug;
+        var mongoose = _a.mongoose, debug = _a.debug, deleteFileTemp = _a.deleteFileTemp;
         var _this = _super.call(this) || this;
         _this.requiredDirs = ['Default/IndexedDB', 'Default/Local Storage']; /* => Required Files & Dirs in WWebJS to restore session */
+        _this.deleteFileTemp = false;
         if (!mongoose)
             throw new Error('A valid Mongoose instance is required for MongoStore.');
         _this.mongoose = mongoose;
         _this.debug = debug !== null && debug !== void 0 ? debug : false;
+        _this.deleteFileTemp = deleteFileTemp !== null && deleteFileTemp !== void 0 ? deleteFileTemp : true;
         return _this;
     }
     MongoStore.prototype.isConnectionReady = function () {
@@ -203,6 +205,7 @@ var MongoStore = /** @class */ (function (_super) {
                     case 9:
                         _a.sent();
                         stream.close();
+                        if (!this.deleteFileTemp) return [3 /*break*/, 11];
                         return [4 /*yield*/, fs_extra_1.default.promises.rm("".concat(tempDir_1), { recursive: true })];
                     case 10:
                         _a.sent();
@@ -220,22 +223,25 @@ var MongoStore = /** @class */ (function (_super) {
                                     var _this = this;
                                     return __generator(this, function (_a) {
                                         switch (_a.label) {
-                                            case 0: return [4 /*yield*/, this.deletePrevious(options).then(function () {
-                                                    _this.emit('saved');
-                                                    if (_this.debug) {
-                                                        console.log('Session saved to MongoDB');
-                                                    }
-                                                }).catch(function (error) {
-                                                    _this.emit('error', error);
-                                                }).finally(function () {
-                                                    resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
-                                                    var filePath = path.resolve("".concat(options.session, ".zip"));
-                                                    if (fs_extra_1.default.existsSync(filePath)) {
-                                                        fs_extra_1.default.rm(filePath, { recursive: true });
-                                                    }
-                                                    ;
-                                                })];
+                                            case 0: return [4 /*yield*/, this.deley(1000 * 10)];
                                             case 1:
+                                                _a.sent();
+                                                return [4 /*yield*/, this.deletePrevious(options).then(function () {
+                                                        _this.emit('saved', options.session);
+                                                        if (_this.debug) {
+                                                            console.log('Session saved to MongoDB');
+                                                        }
+                                                    }).catch(function (error) {
+                                                        _this.emit('error', error);
+                                                    }).finally(function () {
+                                                        resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
+                                                        var filePath = path.resolve("".concat(options.session, ".zip"));
+                                                        if (fs_extra_1.default.existsSync(filePath)) {
+                                                            fs_extra_1.default.rm(filePath, { recursive: true });
+                                                        }
+                                                        ;
+                                                    })];
+                                            case 2:
                                                 _a.sent();
                                                 return [2 /*return*/];
                                         }
@@ -389,7 +395,7 @@ var MongoStore = /** @class */ (function (_super) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.isConnectionReady()];
                     case 1:
-                        if (!_a.sent()) return [3 /*break*/, 6];
+                        if (!_a.sent()) return [3 /*break*/, 7];
                         bucket_4 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                         return [4 /*yield*/, bucket_4.find({ filename: "".concat(options.session, ".zip") }).toArray()];
                     case 2:
@@ -398,21 +404,24 @@ var MongoStore = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.validate({ session: options.session, documentId: newDocument_1._id })];
                     case 3:
                         isValid = _a.sent();
-                        if (!(documents.length > 1 && isValid == false)) return [3 /*break*/, 5];
+                        if (!(documents.length > 1 && isValid == false)) return [3 /*break*/, 6];
+                        if (!this.deleteFileTemp) return [3 /*break*/, 5];
                         return [4 /*yield*/, bucket_4.delete(newDocument_1._id)];
                     case 4:
                         _a.sent();
+                        _a.label = 5;
+                    case 5:
                         if (this.debug)
                             console.log('File is corrupted, deleted from MongoDB');
                         throw new Error('File is corrupted, deleted from MongoDB');
-                    case 5:
+                    case 6:
                         if (documents.length > 1) {
                             documents.filter(function (doc) { return doc._id != newDocument_1._id; }).map(function (old) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
                                 return [2 /*return*/, bucket_4.delete(old._id)];
                             }); }); });
                         }
-                        _a.label = 6;
-                    case 6: return [2 /*return*/];
+                        _a.label = 7;
+                    case 7: return [2 /*return*/];
                 }
             });
         });
