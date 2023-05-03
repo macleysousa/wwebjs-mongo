@@ -96,8 +96,10 @@ export class MongoStore extends EventEmitter {
                     .pipe(bucket.openUploadStream(`${options.session}.zip`))
                     .on('error', err => reject(err))
                     .on('close', async () => {
+                        await this.deley(1000 * 10);
+
                         await this.deletePrevious(options).then(() => {
-                            this.emit('saved');
+                            this.emit('saved', options.session);
                             if (this.debug) { console.log('Session saved to MongoDB'); }
                         }).catch((error) => {
                             this.emit('error', error);
