@@ -217,22 +217,26 @@ var MongoStore = /** @class */ (function (_super) {
                                     .pipe(bucket_1.openUploadStream("".concat(options.session, ".zip")))
                                     .on('error', function (err) { return reject(err); })
                                     .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
-                                    var filePath;
+                                    var _this = this;
                                     return __generator(this, function (_a) {
                                         switch (_a.label) {
-                                            case 0: return [4 /*yield*/, this.deletePrevious(options)];
+                                            case 0: return [4 /*yield*/, this.deletePrevious(options).then(function () {
+                                                    _this.emit('saved');
+                                                    if (_this.debug) {
+                                                        console.log('Session saved to MongoDB');
+                                                    }
+                                                }).catch(function (error) {
+                                                    _this.emit('error', error);
+                                                }).finally(function () {
+                                                    resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
+                                                    var filePath = path.resolve("".concat(options.session, ".zip"));
+                                                    if (fs_extra_1.default.existsSync(filePath)) {
+                                                        fs_extra_1.default.rm(filePath, { recursive: true });
+                                                    }
+                                                    ;
+                                                })];
                                             case 1:
                                                 _a.sent();
-                                                resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
-                                                filePath = path.resolve("".concat(options.session, ".zip"));
-                                                if (fs_extra_1.default.existsSync(filePath)) {
-                                                    fs_extra_1.default.rm(filePath, { recursive: true });
-                                                }
-                                                ;
-                                                this.emit('saved');
-                                                if (this.debug) {
-                                                    console.log('Session saved to MongoDB');
-                                                }
                                                 return [2 /*return*/];
                                         }
                                     });
@@ -400,7 +404,7 @@ var MongoStore = /** @class */ (function (_super) {
                         _a.sent();
                         if (this.debug)
                             console.log('File is corrupted, deleted from MongoDB');
-                        return [2 /*return*/];
+                        throw new Error('File is corrupted, deleted from MongoDB');
                     case 5:
                         if (documents.length > 1) {
                             documents.filter(function (doc) { return doc._id != newDocument_1._id; }).map(function (old) { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {

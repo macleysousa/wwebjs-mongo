@@ -96,14 +96,16 @@ export class MongoStore extends EventEmitter {
                     .pipe(bucket.openUploadStream(`${options.session}.zip`))
                     .on('error', err => reject(err))
                     .on('close', async () => {
-                        await this.deletePrevious(options);
-                        resolve?.call(undefined);
-
-                        const filePath = path.resolve(`${options.session}.zip`);
-                        if (fs.existsSync(filePath)) { fs.rm(filePath, { recursive: true }) };
-
-                        this.emit('saved');
-                        if (this.debug) { console.log('Session saved to MongoDB'); }
+                        await this.deletePrevious(options).then(() => {
+                            this.emit('saved');
+                            if (this.debug) { console.log('Session saved to MongoDB'); }
+                        }).catch((error) => {
+                            this.emit('error', error);
+                        }).finally(() => {
+                            resolve?.call(undefined);
+                            const filePath = path.resolve(`${options.session}.zip`);
+                            if (fs.existsSync(filePath)) { fs.rm(filePath, { recursive: true }) };
+                        });
                     });
             });
         }
@@ -191,7 +193,7 @@ export class MongoStore extends EventEmitter {
             if (documents.length > 1 && isValid == false) {
                 await bucket.delete(newDocument._id);
                 if (this.debug) console.log('File is corrupted, deleted from MongoDB');
-                return;
+                throw new Error('File is corrupted, deleted from MongoDB');
             }
 
             if (documents.length > 1) {
@@ -204,7 +206,7 @@ export class MongoStore extends EventEmitter {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    on(eventName: 'saved' | 'deleted' | 'extracted', listener: (...args: any[]) => void) {
+    on(eventName: 'saved' | 'deleted' | 'extracted' | 'error', listener: (...args: any[]) => void) {
         return super.on(eventName, listener);
     }
 }

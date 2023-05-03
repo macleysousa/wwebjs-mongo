@@ -28,6 +28,6 @@ export declare class MongoStore extends EventEmitter {
     private validate;
     private deletePrevious;
     private deley;
-    on(eventName: 'saved' | 'deleted' | 'extracted', listener: (...args: any[]) => void): this;
+    on(eventName: 'saved' | 'deleted' | 'extracted' | 'error', listener: (...args: any[]) => void): this;
 }
 export {};
