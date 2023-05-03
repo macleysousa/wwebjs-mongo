@@ -330,7 +330,7 @@ var MongoStore = /** @class */ (function (_super) {
     };
     MongoStore.prototype.validate = function (options) {
         return __awaiter(this, void 0, void 0, function () {
-            var bucket_3, filePath_1;
+            var bucket_3, filePath_1, folderPath_1;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -342,21 +342,21 @@ var MongoStore = /** @class */ (function (_super) {
                             }
                             bucket_3 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                             filePath_1 = path.resolve("./".concat(options.documentId, ".zip"));
+                            folderPath_1 = path.resolve("./temp-".concat(options.documentId));
                             if (this.debug)
-                                console.log(filePath_1);
+                                console.log('folderPath', folderPath_1, 'filePath', filePath_1);
                             return [2 /*return*/, new Promise(function (resolve) {
                                     bucket_3.openDownloadStream(options.documentId)
                                         .pipe(fs_extra_1.default.createWriteStream(filePath_1))
                                         .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
-                                        var folderPath, zip, err_1;
+                                        var zip, err_1;
                                         var _this = this;
                                         return __generator(this, function (_a) {
                                             switch (_a.label) {
                                                 case 0:
-                                                    _a.trys.push([0, 1, 2, 5]);
-                                                    folderPath = path.resolve("./temp-".concat(options.documentId));
+                                                    _a.trys.push([0, 1, 2, 7]);
                                                     zip = new adm_zip_1.default(filePath_1);
-                                                    zip.extractAllToAsync(folderPath, true, true, function (err) {
+                                                    zip.extractAllToAsync(folderPath_1, true, true, function (err) {
                                                         if (err) {
                                                             if (_this.debug) {
                                                                 console.log('Session validation failed in MongoDB');
@@ -370,10 +370,8 @@ var MongoStore = /** @class */ (function (_super) {
                                                             }
                                                             resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined, true);
                                                         }
-                                                        if (_this.deleteFileTemp)
-                                                            fs_extra_1.default.promises.rm(filePath_1, { recursive: true });
                                                     });
-                                                    return [3 /*break*/, 5];
+                                                    return [3 /*break*/, 7];
                                                 case 1:
                                                     err_1 = _a.sent();
                                                     resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined, false);
@@ -381,15 +379,22 @@ var MongoStore = /** @class */ (function (_super) {
                                                         console.log('Session validation failed in MongoDB');
                                                         console.log(err_1);
                                                     }
-                                                    return [3 /*break*/, 5];
+                                                    return [3 /*break*/, 7];
                                                 case 2:
-                                                    if (!this.deleteFileTemp) return [3 /*break*/, 4];
+                                                    if (!this.deleteFileTemp) return [3 /*break*/, 6];
+                                                    if (!fs_extra_1.default.existsSync(filePath_1)) return [3 /*break*/, 4];
                                                     return [4 /*yield*/, fs_extra_1.default.promises.rm(filePath_1, { recursive: true })];
                                                 case 3:
                                                     _a.sent();
                                                     _a.label = 4;
-                                                case 4: return [7 /*endfinally*/];
-                                                case 5: return [2 /*return*/];
+                                                case 4:
+                                                    if (!fs_extra_1.default.existsSync(folderPath_1)) return [3 /*break*/, 6];
+                                                    return [4 /*yield*/, fs_extra_1.default.promises.rm(folderPath_1, { recursive: true })];
+                                                case 5:
+                                                    _a.sent();
+                                                    _a.label = 6;
+                                                case 6: return [7 /*endfinally*/];
+                                                case 7: return [2 /*return*/];
                                             }
                                         });
                                     }); });
