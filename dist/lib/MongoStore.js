@@ -383,13 +383,13 @@ var MongoStore = /** @class */ (function (_super) {
                                                 case 2:
                                                     if (!this.deleteFileTemp) return [3 /*break*/, 6];
                                                     if (!fs_extra_1.default.existsSync(filePath_1)) return [3 /*break*/, 4];
-                                                    return [4 /*yield*/, fs_extra_1.default.promises.rm(filePath_1, { recursive: true })];
+                                                    return [4 /*yield*/, fs_extra_1.default.promises.rm(filePath_1, { recursive: true, force: true, retryDelay: 1000 * 5 })];
                                                 case 3:
                                                     _a.sent();
                                                     _a.label = 4;
                                                 case 4:
                                                     if (!fs_extra_1.default.existsSync(folderPath_1)) return [3 /*break*/, 6];
-                                                    return [4 /*yield*/, fs_extra_1.default.promises.rm(folderPath_1, { recursive: true })];
+                                                    return [4 /*yield*/, fs_extra_1.default.promises.rm(folderPath_1, { recursive: true, force: true, retryDelay: 1000 * 5 })];
                                                 case 5:
                                                     _a.sent();
                                                     _a.label = 6;

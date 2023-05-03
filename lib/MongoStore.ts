@@ -198,9 +198,9 @@ export class MongoStore extends EventEmitter {
                         finally {
                             if (this.deleteFileTemp) {
                                 if (fs.existsSync(filePath))
-                                    await fs.promises.rm(filePath, { recursive: true });
+                                    await fs.promises.rm(filePath, { recursive: true, force: true, retryDelay: 1000 * 5 });
                                 if (fs.existsSync(folderPath))
-                                    await fs.promises.rm(folderPath, { recursive: true });
+                                    await fs.promises.rm(folderPath, { recursive: true, force: true, retryDelay: 1000 * 5 });
                             }
                         }
                     });
