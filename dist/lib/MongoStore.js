@@ -342,41 +342,54 @@ var MongoStore = /** @class */ (function (_super) {
                             }
                             bucket_3 = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: "whatsapp-".concat(options.session) });
                             filePath_1 = path.resolve("./".concat(options.documentId, ".zip"));
+                            if (this.debug)
+                                console.log(filePath_1);
                             return [2 /*return*/, new Promise(function (resolve) {
                                     bucket_3.openDownloadStream(options.documentId)
                                         .pipe(fs_extra_1.default.createWriteStream(filePath_1))
                                         .on('close', function () { return __awaiter(_this, void 0, void 0, function () {
-                                        var zip, err_1;
+                                        var folderPath, zip, err_1;
+                                        var _this = this;
                                         return __generator(this, function (_a) {
                                             switch (_a.label) {
                                                 case 0:
-                                                    _a.trys.push([0, 1, 2, 4]);
+                                                    _a.trys.push([0, 1, 2, 5]);
+                                                    folderPath = path.resolve("./temp-".concat(options.documentId));
                                                     zip = new adm_zip_1.default(filePath_1);
-                                                    if (zip.test()) {
-                                                        resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined, true);
-                                                        if (this.debug) {
-                                                            console.log('Session validated in MongoDB');
+                                                    zip.extractAllToAsync(folderPath, true, true, function (err) {
+                                                        if (err) {
+                                                            if (_this.debug) {
+                                                                console.log('Session validation failed in MongoDB');
+                                                                console.log(err);
+                                                            }
+                                                            resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined, false);
                                                         }
-                                                    }
-                                                    else {
-                                                        resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined, false);
-                                                        if (this.debug) {
-                                                            console.log('Session validation failed in MongoDB');
+                                                        else {
+                                                            if (_this.debug) {
+                                                                console.log('Session validated in MongoDB');
+                                                            }
+                                                            resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined, true);
                                                         }
-                                                    }
-                                                    return [3 /*break*/, 4];
+                                                        if (_this.deleteFileTemp)
+                                                            fs_extra_1.default.promises.rm(filePath_1, { recursive: true });
+                                                    });
+                                                    return [3 /*break*/, 5];
                                                 case 1:
                                                     err_1 = _a.sent();
                                                     resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined, false);
                                                     if (this.debug) {
                                                         console.log('Session validation failed in MongoDB');
+                                                        console.log(err_1);
                                                     }
-                                                    return [3 /*break*/, 4];
-                                                case 2: return [4 /*yield*/, fs_extra_1.default.promises.rm(filePath_1, { recursive: true })];
+                                                    return [3 /*break*/, 5];
+                                                case 2:
+                                                    if (!this.deleteFileTemp) return [3 /*break*/, 4];
+                                                    return [4 /*yield*/, fs_extra_1.default.promises.rm(filePath_1, { recursive: true })];
                                                 case 3:
                                                     _a.sent();
-                                                    return [7 /*endfinally*/];
-                                                case 4: return [2 /*return*/];
+                                                    _a.label = 4;
+                                                case 4: return [7 /*endfinally*/];
+                                                case 5: return [2 /*return*/];
                                             }
                                         });
                                     }); });

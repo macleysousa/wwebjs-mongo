@@ -165,26 +165,41 @@ export class MongoStore extends EventEmitter {
             if (this.debug) { console.log('Validating session in MongoDB'); }
             const bucket = new this.mongoose.mongo.GridFSBucket(this.mongoose.connection.db, { bucketName: `whatsapp-${options.session}` });
             const filePath = path.resolve(`./${options.documentId}.zip`);
+            const folderPath = path.resolve(`./temp-${options.documentId}`);
+            if (this.debug) console.log('folderPath', folderPath, 'filePath', filePath);
+
             return new Promise((resolve) => {
                 bucket.openDownloadStream(options.documentId)
                     .pipe(fs.createWriteStream(filePath))
                     .on('close', async () => {
                         try {
                             const zip = new AdmZip(filePath);
-                            if (zip.test()) {
-                                resolve?.call(undefined, true);
-                                if (this.debug) { console.log('Session validated in MongoDB'); }
-                            } else {
-                                resolve?.call(undefined, false);
-                                if (this.debug) { console.log('Session validation failed in MongoDB'); }
-                            }
+                            zip.extractAllToAsync(folderPath, true, true, (err) => {
+                                if (err) {
+                                    if (this.debug) {
+                                        console.log('Session validation failed in MongoDB');
+                                        console.log(err);
+                                    }
+                                    resolve?.call(undefined, false);
+                                }
+                                else {
+                                    if (this.debug) { console.log('Session validated in MongoDB'); }
+                                    resolve?.call(undefined, true);
+                                }
+                            });
                         }
                         catch (err) {
                             resolve?.call(undefined, false);
-                            if (this.debug) { console.log('Session validation failed in MongoDB'); }
+                            if (this.debug) {
+                                console.log('Session validation failed in MongoDB');
+                                console.log(err);
+                            }
                         }
                         finally {
-                            await fs.promises.rm(filePath, { recursive: true });
+                            if (this.deleteFileTemp) {
+                                await fs.promises.rm(filePath, { recursive: true });
+                                await fs.promises.rm(folderPath, { recursive: true });
+                            }
                         }
                     });
             });
