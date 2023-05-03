@@ -4,6 +4,10 @@ import { EventEmitter } from 'events';
 type Props = {
     mongoose: Mongoose;
     debug?: boolean;
+    /**
+     * delete the temporary file created to save the session
+     * @default true
+     */
     deleteFileTemp?: boolean;
 };
 export declare class MongoStore extends EventEmitter {

@@ -9,6 +9,10 @@ import { EventEmitter } from 'events';
 type Props = {
     mongoose: Mongoose;
     debug?: boolean;
+    /**
+     * delete the temporary file created to save the session
+     * @default true
+     */
     deleteFileTemp?: boolean;
 };
 
@@ -110,7 +114,7 @@ export class MongoStore extends EventEmitter {
                         }).finally(() => {
                             resolve?.call(undefined);
                             const filePath = path.resolve(`${options.session}.zip`);
-                            if (fs.existsSync(filePath)) { fs.rm(filePath, { recursive: true }) };
+                            if (fs.existsSync(filePath) && this.deleteFileTemp) { fs.rm(filePath, { recursive: true }) };
                         });
                     });
             });

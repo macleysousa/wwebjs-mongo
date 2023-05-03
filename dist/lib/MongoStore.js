@@ -236,7 +236,7 @@ var MongoStore = /** @class */ (function (_super) {
                                                     }).finally(function () {
                                                         resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined);
                                                         var filePath = path.resolve("".concat(options.session, ".zip"));
-                                                        if (fs_extra_1.default.existsSync(filePath)) {
+                                                        if (fs_extra_1.default.existsSync(filePath) && _this.deleteFileTemp) {
                                                             fs_extra_1.default.rm(filePath, { recursive: true });
                                                         }
                                                         ;
