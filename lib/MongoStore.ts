@@ -186,6 +186,7 @@ export class MongoStore extends EventEmitter {
                                     if (this.debug) { console.log('Session validated in MongoDB'); }
                                     resolve?.call(undefined, true);
                                 }
+                                fs.rm(folderPath, { recursive: true, maxRetries: 5, retryDelay: 1000 * 5 });
                             });
                         }
                         catch (err) {
@@ -197,10 +198,7 @@ export class MongoStore extends EventEmitter {
                         }
                         finally {
                             if (this.deleteFileTemp) {
-                                if (fs.existsSync(filePath))
-                                    await fs.promises.rm(filePath, { recursive: true, force: true, retryDelay: 1000 * 5 });
-                                if (fs.existsSync(folderPath))
-                                    await fs.promises.rm(folderPath, { recursive: true, force: true, retryDelay: 1000 * 5 });
+                                await fs.rm(filePath, { recursive: true, maxRetries: 5, force: true, retryDelay: 1000 * 5 });
                             }
                         }
                     });

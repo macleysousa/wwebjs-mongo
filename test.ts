@@ -13,8 +13,8 @@ async function test(id: string) {
     // console.log(id, exist)
     // const isvalid = await store.validate({ session: `session-${id}`, documentId: '644912ad801e21a154e0c604' });
     // console.log(isvalid);
-    await store.extract({ session: `session-${id}`, path: `./session-${id}.zip`, });
-    await store.save({ session: `session-${id}` });
+    //await store.extract({ session: `session-${id}`, path: `./session-${id}.zip`, });
+    await store.save({ session: `session-${id}`, dataPath: 'wwebjs_auth' });
     if (exist) {
         // await store.extract({ session: `session-${id}`, path: `./session-${id}.zip`, });
         console.log('saved');

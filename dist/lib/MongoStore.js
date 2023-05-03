@@ -354,7 +354,7 @@ var MongoStore = /** @class */ (function (_super) {
                                         return __generator(this, function (_a) {
                                             switch (_a.label) {
                                                 case 0:
-                                                    _a.trys.push([0, 1, 2, 7]);
+                                                    _a.trys.push([0, 1, 2, 5]);
                                                     zip = new adm_zip_1.default(filePath_1);
                                                     zip.extractAllToAsync(folderPath_1, true, true, function (err) {
                                                         if (err) {
@@ -370,8 +370,9 @@ var MongoStore = /** @class */ (function (_super) {
                                                             }
                                                             resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined, true);
                                                         }
+                                                        fs_extra_1.default.rm(folderPath_1, { recursive: true, maxRetries: 5, retryDelay: 1000 * 5 });
                                                     });
-                                                    return [3 /*break*/, 7];
+                                                    return [3 /*break*/, 5];
                                                 case 1:
                                                     err_1 = _a.sent();
                                                     resolve === null || resolve === void 0 ? void 0 : resolve.call(undefined, false);
@@ -379,22 +380,15 @@ var MongoStore = /** @class */ (function (_super) {
                                                         console.log('Session validation failed in MongoDB');
                                                         console.log(err_1);
                                                     }
-                                                    return [3 /*break*/, 7];
+                                                    return [3 /*break*/, 5];
                                                 case 2:
-                                                    if (!this.deleteFileTemp) return [3 /*break*/, 6];
-                                                    if (!fs_extra_1.default.existsSync(filePath_1)) return [3 /*break*/, 4];
-                                                    return [4 /*yield*/, fs_extra_1.default.promises.rm(filePath_1, { recursive: true, force: true, retryDelay: 1000 * 5 })];
+                                                    if (!this.deleteFileTemp) return [3 /*break*/, 4];
+                                                    return [4 /*yield*/, fs_extra_1.default.rm(filePath_1, { recursive: true, maxRetries: 5, force: true, retryDelay: 1000 * 5 })];
                                                 case 3:
                                                     _a.sent();
                                                     _a.label = 4;
-                                                case 4:
-                                                    if (!fs_extra_1.default.existsSync(folderPath_1)) return [3 /*break*/, 6];
-                                                    return [4 /*yield*/, fs_extra_1.default.promises.rm(folderPath_1, { recursive: true, force: true, retryDelay: 1000 * 5 })];
-                                                case 5:
-                                                    _a.sent();
-                                                    _a.label = 6;
-                                                case 6: return [7 /*endfinally*/];
-                                                case 7: return [2 /*return*/];
+                                                case 4: return [7 /*endfinally*/];
+                                                case 5: return [2 /*return*/];
                                             }
                                         });
                                     }); });
